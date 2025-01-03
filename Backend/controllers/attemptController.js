@@ -80,7 +80,7 @@ export const submitAttempt = async(req,res) => {
     }
     catch(error)
     {
-        res.status(500).json({  message :  "server error"   });
+        res.status(500).json({message:"server error" });
     }
 
 }
@@ -93,7 +93,7 @@ export const getUserAttempts = async(req,res) => {
         res.json(attempts);
     }catch(error)
     {
-        res.status(500).json({message:'Server Error'})
+        res.status(500).json({message:'Server Error'});
     }
 
 }
