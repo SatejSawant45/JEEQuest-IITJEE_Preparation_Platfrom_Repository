@@ -1,11 +1,14 @@
 import react from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Trophy , Clock } from 'lucide-react';
+import Navbar from '../componants/Navbar';
 
 export default function Home()
 {
     return(
         <div className="space-y-16">
+            <Navbar></Navbar>
+
             <section className="text-center space-y-4">
                 <h1  className="text-4xl font-bold text-gray-900">
                     Prepare for IIT JEE with Interactive Quizzes

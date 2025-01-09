@@ -1,6 +1,7 @@
 import react, { useEffect, useState } from 'react';
 import { useParams , useNavigate } from 'react-router-dom';
 import QuizForm from '../../componants/QuizForm';
+import {Plus } from 'lucide-react';
 
 export default function EditQuiz()
 {

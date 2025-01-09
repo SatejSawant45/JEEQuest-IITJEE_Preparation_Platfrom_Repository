@@ -1,21 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import Home from './pages/Home';
-import UserAuth from './pages/auth/UserAuth';
-import AdminAuth from './pages/auth/AdminAuth';
-import UserDashboard from './pages/user/Dashboard';
-import AdminDashboard from './pages/admin/Dashboard';
-import CreateQuiz from './pages/admin/CreateQuiz';
-import EditQuiz from './pages/admin/EditQuiz';
-import TakeQuiz from './pages/quiz/TakeQuiz';
-import VideoLectures from './pages/lectures/VideoLectures';
-import UserChat from './pages/chat/UserChat';
+import Layout from "./componants/Layout.jsx";
+import UserAuth from "./pages/auth/UserAuth.jsx";
+import AdminAuth from "./pages/auth/AdminAuth.jsx";
+import UserDashboard from "./pages/User/Dashboard.jsx";
+import AdminDashboard from "./pages/Admin/Dashboard.jsx";
+import CreateQuiz from "./pages/Admin/CreateQuiz.jsx";
+import EditQuiz from "./pages/Admin/EditQuiz.jsx";
+import TakeQuiz from "./pages/quiz/TakeQuiz.jsx";
+import Home from "./pages/Home.jsx";
 
 function App()
 {
     return(
-        <Router>
             <Routes>
                 <Route path="/" element={<Layout></Layout>}></Route>
                 <Route index element={<Home></Home>}></Route>
@@ -28,8 +25,10 @@ function App()
                 <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>
                 <Route path="admin/quiz/:id/edit" element={<EditQuiz></EditQuiz>}></Route>
                 <Route path="/quiz/:id" element={<TakeQuiz></TakeQuiz>}></Route>
-                
             </Routes>
-        </Router>
+        
+                
     )
 }
+
+export default App;
