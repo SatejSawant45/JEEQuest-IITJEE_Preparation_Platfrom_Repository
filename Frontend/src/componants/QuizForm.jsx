@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Trash2 , Plus } from 'lucide-react'; 
 
+
 export default function QuizForm({initialData , onSubmit}) 
 {
     const { register , control ,  handleSubmit , formState : { errors } } = useForm({
@@ -23,6 +24,8 @@ export default function QuizForm({initialData , onSubmit})
 
 
     return(
+    
+       
         <div className="m-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
@@ -30,7 +33,7 @@ export default function QuizForm({initialData , onSubmit})
                     <input type="text" {...register('title',{required :'Title is required'})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></input>
                     
                     {errors.title && (
-                        <p className="mt-1 text-sm text-red-600">errors.title.message</p>
+                        <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
 
                     )}
 
@@ -69,12 +72,13 @@ export default function QuizForm({initialData , onSubmit})
 
                 
                 {fields.map((field,index)=>{
+                    return(
                     <div key={field.id} className="p-4 border rounded-md space-y-4">
                         <div className="flex justify-between items-start">
                             <h4 className="font-medium">
                                 Question{index+1}
                             </h4>
-                            <button type="button" onClick={remove(index)} className="text-red-600 hover:text-red-500">
+                            <button type="button" onClick={()=> remove(index)} className="text-red-600 hover:text-red-500">
                                 <Trash2 className="w-4 h-4"></Trash2>
 
                             </button>
@@ -82,16 +86,18 @@ export default function QuizForm({initialData , onSubmit})
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Question Text</label>
-                            <textarea {...register(`question.${index+1}.text`,{required:'Question description required'})} rows={2} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                            <textarea {...register(`questions.${index}.text`,{required:'Question description required'})} rows={2} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             {[0,1,2,3].map((optionIndex)=>{
+                                return(
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Option{optionIndex+1}</label>
                                     <input {...register(`questions.${index}.options.${optionIndex}`,{required:'Option is required'})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></input>
 
                                 </div>
+                                )
                             })}
 
                         </div>
@@ -99,11 +105,13 @@ export default function QuizForm({initialData , onSubmit})
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Correct Answer</label>
-                                <select {...register(`question.${index}.correctAnswer`)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <select {...register(`questions.${index}.correctAnswer`)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     {[0,1,2,3].map((optionIndex)=>{
+                                        return (
                                         <option key={optionIndex} value={optionIndex}>
                                             Option{optionIndex+1}
                                         </option>
+                                        )
                                     })}
 
                                 </select>
@@ -118,17 +126,19 @@ export default function QuizForm({initialData , onSubmit})
 
                         </div>
                     </div>
+                    )
 
                 })}
                         
             </div>
 
                 <div className="flex justify-end">
-                    <button type="submit" className="flex justify-end">{initialData ? 'Update Quiz' : 'Create Quiz'}</button>
+                    <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">{initialData ? 'Update Quiz' : 'Create Quiz'}</button>
                 </div>
             
             </form>  
         </div> 
+     
     )
    
 }

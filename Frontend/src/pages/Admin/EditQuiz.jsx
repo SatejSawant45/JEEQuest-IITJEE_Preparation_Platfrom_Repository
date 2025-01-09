@@ -1,7 +1,8 @@
 import react, { useEffect, useState } from 'react';
 import { useParams , useNavigate } from 'react-router-dom';
 import QuizForm from '../../componants/QuizForm';
-import {Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import Navbar from '../../componants/Navbar';
 
 export default function EditQuiz()
 {
@@ -39,9 +40,13 @@ export default function EditQuiz()
     }
 
     return (
+        
         <div>
-            <h1 className='text-2xl font-bold mb-6'>Edit Quiz</h1>
-            <QuizForm initialData={quiz} onSubmit={handleSubmit}></QuizForm>
+            <Navbar></Navbar>
+            <div className="m-8">
+                <h1 className='text-2xl font-bold mb-6'>Edit Quiz</h1>
+                <QuizForm initialData={quiz} onSubmit={handleSubmit}></QuizForm>
+            </div>
         </div>
     )
 }
