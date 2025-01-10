@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const answerSchema = new mongoose.Schema({
     
@@ -16,7 +16,6 @@ const answerSchema = new mongoose.Schema({
 
 
 const attemptSchema = new mongoose.Schema({
-
 
     quiz:{
         type:mongoose.Schema.Types.ObjectId,

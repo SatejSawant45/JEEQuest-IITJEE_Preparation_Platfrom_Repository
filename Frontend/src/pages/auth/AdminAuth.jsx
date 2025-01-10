@@ -24,7 +24,7 @@ export default function AdminAuth()
 
                 <Link to={isLogin ? '/admin/signup':'/admin/login'} className="font-medium text-indigo-600 hover:text-indigo-500"></Link>
 
-                {isLogin ? 'Sign Up' : 'Login'}
+                {isLogin ? 'Sign Up' : 'Log in'}
                 
                 
             </p>

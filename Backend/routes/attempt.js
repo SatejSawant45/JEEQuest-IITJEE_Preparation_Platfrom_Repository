@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express'; 
 import { ExpressValidator } from 'express-validator';
 import { body } from 'express-validator';
 import * as attemptController from "../controllers/attemptController.js";

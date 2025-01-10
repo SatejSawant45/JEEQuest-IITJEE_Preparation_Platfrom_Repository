@@ -1,5 +1,5 @@
-import Attempt from '../models/Attempt';
-import Quiz from '../models/Quiz';
+import Attempt from '../models/Attempt.js';
+import Quiz from '../models/Quiz.js';
 
 export const startAttempt = async(req,res) => {
     try

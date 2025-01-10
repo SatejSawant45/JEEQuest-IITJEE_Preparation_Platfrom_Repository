@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import  User from '../models/User';
+import  User from '../models/User.js';
 
 export const auth = async(req,res,next) => {
     try{
@@ -33,7 +33,7 @@ export const adminAuth = async(req,res,next) => {
         })
     }catch(error)
     {
-        res.status(401).json({message:'Please authenticate'})
+        res.status(401).json({message:'Please authenticate'});
     }
 
 }

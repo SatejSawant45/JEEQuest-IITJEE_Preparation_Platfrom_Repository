@@ -1,4 +1,4 @@
-import Quiz from '../models/Quiz';
+import Quiz from '../models/Quiz.js';
 import { validationResult } from 'express-validator';
 
 export const createQuiz = async(req,res) => {
@@ -103,7 +103,7 @@ export const getQuiz = async(req,res) => {
         res.json(quiz);
     }catch(error)
     {
-        res.status(500).json({message:"Server error"})
+        res.status(500).json({message:"Server error"});
     }
 
 }

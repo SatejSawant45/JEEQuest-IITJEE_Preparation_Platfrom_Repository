@@ -1,5 +1,5 @@
-const express = require('express');
-import * as leaderboardController from '../controllers/leaderboradController';
+import express from 'express'; 
+import * as leaderboardController from '../controllers/leaderboradController.js';
 
 const router = express.Router();
 

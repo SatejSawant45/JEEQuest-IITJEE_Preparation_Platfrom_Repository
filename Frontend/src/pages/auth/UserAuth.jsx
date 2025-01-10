@@ -10,9 +10,39 @@ export default function UserAuth()
 
     const HandleSubmit = async(data) =>{
         
-        // TODO: Implement actual authentication
         console.log('User auth data',data);
-        navigate("/dashboard");
+        // TODO: Implement actual authentication
+
+        const url = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
+        
+            try{
+                const response = await fetch(url,{
+                    method:'POST',
+                    headers:{
+                        'Content-Type' : 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                const responseData = await response.json(); 
+                
+                if(response.ok)
+                {
+                    console.log('Authentication sucessful',responseData);
+                    navigate("/dashboard");
+                }
+                else
+                {
+                    console.error('Authentication failed:', responseData);
+                }
+
+            }catch(error){
+                console.error('Error:',error.message);
+            }
+            
+
+      
+        
         
     }
     return(

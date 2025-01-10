@@ -1,15 +1,11 @@
-const express = require('express');
+import express from 'express'; 
 import { body } from 'express-validator';
-import * as authController from '../controllers/authController';
+import * as authController from '../controllers/authController.js';
 
 const router = express.Router();
 
-router.post('/register',[
-    body('name').trim(),notEmpty(),
-    body('email').isEmail(),
-    body('password').isLength({mid:6}),
-    body('role').isIn(['user','admin'])
-],authController.register);
+
+router.post('/register',authController.register);
 
 router.post('/login',[
     body('email').isEmail(),
