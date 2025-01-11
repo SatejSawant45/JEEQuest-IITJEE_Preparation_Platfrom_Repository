@@ -17,8 +17,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:5173',  // Allow frontend on port 3000
-    methods: ['GET', 'POST'],        // Specify allowed methods
+    origin: 'http://localhost:5173',  
+    methods: ['GET', 'POST'],        
 }));
 
 
@@ -32,7 +32,7 @@ mongoose.connect("mongodb+srv://satejsawant90:llMHIjVUoKUzecxR@satejsawant90clus
     .catch((err) => console.error('mongodb connection error' , err));
 
 app.use((err, req, res, next) => {
-    console.error(err.stack);  // Log error stack
+    console.error(err.stack);  
     res.status(500).json({ message: 'Something went wrong!' });  // Send generic error message
 });
 
