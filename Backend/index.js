@@ -24,7 +24,9 @@ app.use(cors({
 
 app.use('/api/auth',authRoutes);
 app.use('/api/quiz',quizRoutes);
+
 app.use('/api/attempt',attemptRoutes);
+
 app.use('/api/leaderboard',leaderboardRoutes);
 
 mongoose.connect(process.env.MONGO_URI)

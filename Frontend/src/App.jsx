@@ -9,6 +9,11 @@ import CreateQuiz from "./pages/Admin/CreateQuiz.jsx";
 import EditQuiz from "./pages/Admin/EditQuiz.jsx";
 import TakeQuiz from "./pages/quiz/TakeQuiz.jsx";
 import Home from "./pages/Home.jsx";
+import AdminRegisterForm from './componants/RegisterComponants/AdminRegisterForm.jsx';
+import UserRegisterForm from './componants/RegisterComponants/UserRegisterForm.jsx';
+import UserRegister from './pages/register/UserRegister.jsx';
+import AdminRegister from './pages/register/AdminRegister.jsx';
+
 
 function App()
 {
@@ -16,10 +21,10 @@ function App()
             <Routes>
                 <Route path="/" element={<Layout></Layout>}></Route>
                 <Route index element={<Home></Home>}></Route>
-                <Route path="/login" element={<UserAuth></UserAuth>}></Route>
-                <Route path="/signup" element={<UserAuth></UserAuth>}></Route>
+                <Route path="/user/login" element={<UserAuth></UserAuth>}></Route>
+                <Route path="/user/signup" element={<UserRegister></UserRegister>}></Route>
                 <Route path="/admin/login" element={<AdminAuth></AdminAuth>}></Route>
-                <Route path="/admin/signup" element={<AdminAuth></AdminAuth>}></Route>
+                <Route path="/admin/signup" element={<AdminRegister></AdminRegister>}></Route>
                 <Route path="dashboard" element={<UserDashboard></UserDashboard>}></Route>
                 <Route path="admin/dashboard" element={<AdminDashboard></AdminDashboard>}></Route>
                 <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>

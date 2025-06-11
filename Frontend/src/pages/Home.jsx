@@ -18,7 +18,7 @@ export default function Home()
                     through detailed analytics and performance metrics.
                 </p>
                 <div className="flex justify-center gap-4">
-                    <Link to="/signup" className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 transition-colors"> Get Started as Student</Link>
+                    <Link to="/user/signup" className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 transition-colors"> Get Started as Student</Link>
                     <Link to="/admin/signup" className="bg-white text-indigo-600 px-6 py-3 rounded-md border border-indigo-600 hover:bg-indigo-50 transition-colors">Join as Admin</Link>
                 </div>
                 <div className="mt-2">

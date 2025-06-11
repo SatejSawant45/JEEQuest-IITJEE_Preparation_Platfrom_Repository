@@ -1,8 +1,9 @@
 import react from 'react';
 import { useLocation, useNavigate , Link } from 'react-router-dom';
-import UserAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
+// import UserAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
+import UserRegisterForm from '../../componants/RegisterComponants/UserRegisterForm.jsx';
 
-export default function UserAuth()
+export default function UserRegister()
 {
     const navigate = useNavigate();
     const location = useLocation();
@@ -47,7 +48,7 @@ export default function UserAuth()
     }
     return(
         <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
-            <UserAuthForm onSubmit={HandleSubmit}></UserAuthForm>
+            <UserRegisterForm onSubmit={HandleSubmit}></UserRegisterForm>
 
             <p className="mt-4 text-center text-sm text-gray-600">
             {isLogin ? " Don't have a user account? ":" Already have an user account? "}
@@ -58,6 +59,8 @@ export default function UserAuth()
                 
                 
             </p>
+
+            
 
         </div>
     )

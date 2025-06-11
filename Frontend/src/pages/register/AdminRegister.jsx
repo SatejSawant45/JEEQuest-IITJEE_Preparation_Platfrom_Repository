@@ -1,8 +1,9 @@
 import react from 'react';
 import { useLocation, useNavigate , Link } from 'react-router-dom';
 import AdminAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
+import AdminRegisterForm from '../../componants/RegisterComponants/AdminRegisterForm.jsx';
 
-export default function AdminAuth()
+export default function AdminRegister()
 {
     const navigate = useNavigate();
     const location = useLocation();
@@ -17,7 +18,7 @@ export default function AdminAuth()
     }
     return(
         <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
-            <AdminAuthForm onSubmit={HandleSubmit}></AdminAuthForm>
+            <AdminRegisterForm  onSubmit={HandleSubmit}></AdminRegisterForm>
 
             <p className="mt-4 text-center text-sm text-gray-600">
             {isLogin ? " Don't have an admin account? ":" Already have an admin account? "}
