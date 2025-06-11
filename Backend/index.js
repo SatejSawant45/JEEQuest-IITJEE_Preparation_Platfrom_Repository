@@ -27,13 +27,13 @@ app.use('/api/quiz',quizRoutes);
 app.use('/api/attempt',attemptRoutes);
 app.use('/api/leaderboard',leaderboardRoutes);
 
-mongoose.connect("mongodb+srv://satejsawant90:llMHIjVUoKUzecxR@satejsawant90cluster.rpwzqu1.mongodb.net/IITJEEquiz")
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to compass'))
     .catch((err) => console.error('mongodb connection error' , err));
 
 app.use((err, req, res, next) => {
     console.error(err.stack);  
-    res.status(500).json({ message: 'Something went wrong!' });  // Send generic error message
+    res.status(500).json({ message: 'Something went wrong!' });
 });
 
 
