@@ -1,7 +1,7 @@
 import react from 'react';
 import { useLocation, useNavigate , Link } from 'react-router-dom';
-import AdminAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
-import AdminRegisterForm from '../../componants/RegisterComponants/AdminRegisterForm.jsx';
+import AdminAuthForm from "../../nonshadcncomponants/AuthComponants/UserAuthFrom.jsx"
+import AdminRegisterForm from '../../nonshadcncomponants/RegisterComponants/AdminRegisterForm.jsx';
 
 export default function AdminRegister()
 {

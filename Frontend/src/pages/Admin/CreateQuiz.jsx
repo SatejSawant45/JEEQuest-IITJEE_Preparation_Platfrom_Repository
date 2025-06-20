@@ -1,6 +1,6 @@
 import react from 'react';
 import { useNavigate } from 'react-router-dom';
-import QuizForm from "../../componants/QuizForm.jsx";
+import QuizForm from "../../nonshadcncomponants/QuizForm.jsx";
 
 export default function CreateQuiz(){
     const navigate = useNavigate();

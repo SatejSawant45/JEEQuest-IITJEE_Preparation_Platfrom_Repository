@@ -1,8 +1,8 @@
 import react, { useEffect, useState } from 'react';
 import { useParams , useNavigate } from 'react-router-dom';
-import QuizForm from '../../componants/QuizForm';
+import QuizForm from '../../nonshadcncomponants/QuizForm';
 import { Plus } from 'lucide-react';
-import Navbar from '../../componants/Navbar';
+import Navbar from '../../nonshadcncomponants/Navbar';
 
 export default function EditQuiz()
 {

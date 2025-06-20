@@ -1,7 +1,7 @@
 import react from 'react';
 import { useLocation, useNavigate , Link } from 'react-router-dom';
 // import UserAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
-import UserRegisterForm from '../../componants/RegisterComponants/UserRegisterForm.jsx';
+import UserRegisterForm from '../../nonshadcncomponants/RegisterComponants/UserRegisterForm.jsx';
 
 export default function UserRegister()
 {
@@ -30,7 +30,8 @@ export default function UserRegister()
                 if(response.ok)
                 {
                     console.log('Authentication sucessful',responseData);
-                    navigate("/dashboard");
+                    localStorage.setaItem('jwtToken', response.data.token);
+                    navigate("/user/dashboard");
                 }
                 else
                 {

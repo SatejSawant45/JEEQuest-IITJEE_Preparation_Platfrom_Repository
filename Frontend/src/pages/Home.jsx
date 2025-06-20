@@ -1,7 +1,7 @@
 import react from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Trophy , Clock } from 'lucide-react';
-import Navbar from '../componants/Navbar';
+import Navbar from '../nonshadcncomponants/Navbar';
 
 export default function Home()
 {

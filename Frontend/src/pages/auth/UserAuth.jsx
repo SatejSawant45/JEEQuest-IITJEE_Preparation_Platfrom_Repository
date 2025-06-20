@@ -1,6 +1,7 @@
 import react from 'react';
 import { useLocation, useNavigate , Link } from 'react-router-dom';
-import UserAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
+import UserAuthForm from "../../nonshadcncomponants/AuthComponants/UserAuthFrom.jsx"
+import { Button } from "@/components/ui/button"
 
 export default function UserAuth()
 {
@@ -28,8 +29,11 @@ export default function UserAuth()
                 
                 if(response.ok)
                 {
-                    console.log('Authentication sucessful',responseData);
-                    navigate("/dashboard");
+                    const recievedToken  = responseData.token;
+                    console.log('Authentication sucessful',recievedToken);
+
+                    localStorage.setItem("jwtToken", recievedToken);
+                    navigate("/user/dashboard");
                 }
                 else
                 {
@@ -47,7 +51,11 @@ export default function UserAuth()
     }
     return(
         <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
+           
             <UserAuthForm onSubmit={HandleSubmit}></UserAuthForm>
+
+
+
 
             <p className="mt-4 text-center text-sm text-gray-600">
             {isLogin ? " Don't have a user account? ":" Already have an user account? "}

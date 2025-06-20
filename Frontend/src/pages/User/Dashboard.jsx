@@ -1,54 +1,67 @@
-import react from 'react';
-import QuizCard from '../../componants/QuizCard.jsx';
-import LeaderboardTable from "../../componants/LeaderboardTable.jsx";
-import Navbar from "../../componants/Navbar.jsx";
+import { AppSidebar } from "@/components/app-sidebar"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 
-const mockQuizzes = [
-    {
-      id: '1',
-      title: 'Physics Mechanics',
-      description: 'Test your knowledge of Newton\'s laws and kinematics',
-      duration: 60,
-      questions: [],
-      createdBy: 'admin1',
-      createdAt: new Date(),
-    },
-    // Add more mock quizzes as needed
-  ];
-  
-  const mockLeaderboard = [
-    {
-      userId: '1',
-      userName: 'John Doe',
-      quizId: '1',
-      quizTitle: 'Physics Mechanics',
-      score: 95,
-      completedAt: new Date(),
-    },
-    // Add more mock entries as needed
-  ];
+import { NavLink,Outlet } from "react-router-dom"
 
-export default function UserDashboard(){
-    return(
-        <div className="space-y-8">
-            <Navbar></Navbar>
-            <section className='m-8'>
-                <h2 className='text-2xl font-bold mb-4'>Available Quizzes</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mockQuizzes.map((quiz)=>(
-                        <QuizCard key={quiz.id} quiz={quiz}></QuizCard>
-                    ))}
-                </div>
-            </section>
-
-            <section className='m-8'>
-                <h2 className="text-2xl font-bold mb-4">
-                    Your recent performance
-                </h2>
-                <LeaderboardTable entries={mockLeaderboard}></LeaderboardTable>
-            </section>
-
+export default function Page() {
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">
+                    Building Your Application
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            
+          </div>
+        </header>
+        
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+            {/* <div className="dashboard-nav">
+                        
+                <NavLink to="chatbot">Search</NavLink>
+                <NavLink to="lectures">Friend</NavLink>
+                <NavLink to="quizzes">Request</NavLink>
+                <NavLink to="analysis">Stranger</NavLink>
+            </div>
+            <Outlet></Outlet> */}
+            <div className="bg-muted/50 aspect-video rounded-xl" />
+            <div className="bg-muted/50 aspect-video rounded-xl" />
+            <div className="bg-muted/50 aspect-video rounded-xl" />
+          </div>
+          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
         </div>
-    )
+      </SidebarInset>
+    </SidebarProvider>
+  )
 }
-

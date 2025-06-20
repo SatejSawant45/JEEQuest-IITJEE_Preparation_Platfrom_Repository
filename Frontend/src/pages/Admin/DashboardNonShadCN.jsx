@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Plus } from 'lucide-react';
-import QuizCard from "../../componants/QuizCard.jsx";
+import QuizCard from "../../nonshadcncomponants/QuizCard.jsx";
 import { Link } from "react-router-dom";
-import Navbar from "../../componants/Navbar.jsx";
+import Navbar from "../../nonshadcncomponants/Navbar.jsx";
 
 const mockQuizzes = [
     {
