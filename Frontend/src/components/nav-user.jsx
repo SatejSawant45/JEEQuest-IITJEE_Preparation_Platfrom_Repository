@@ -29,6 +29,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { NavLink } from "react-router-dom"
 
 export function NavUser({
   user
@@ -65,10 +66,12 @@ export function NavUser({
                   <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                
+                  <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
+                
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -82,7 +85,9 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
-                Account
+                <NavLink to="profile">
+                  Account
+                </NavLink>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCard />

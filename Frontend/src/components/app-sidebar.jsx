@@ -57,16 +57,16 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Test Analysis",
+          url: "analysis",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Video Lectures",
+          url: "lectures",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "Blogs",
+          url: "blogs",
         },
       ],
     },
@@ -76,16 +76,16 @@ const data = {
       icon: Bot,
       items: [
         {
-          title: "Genesis",
-          url:"#",
+          title: "Mentors",
+          url:"mentors",
         },
         {
-          title: "Explorer",
-          url: "#",
+          title: "Inbox",
+          url: "chats",
         },
         {
-          title: "Quantum",
-          url: "#",
+          title: "ChatBot",
+          url: "chatbot",
         },
       ],
     },
@@ -138,13 +138,8 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
+      name: "Quizzes",
+      url: "quizzes",
       icon: PieChart,
     },
     {
