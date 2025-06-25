@@ -95,7 +95,7 @@ const mockMessages = [
   },
 ]
 
-export default function ChatPage() {
+export default function AdminInbox() {
   const [activeConversation, setActiveConversation] = useState(conversations[0])
   const [messages, setMessages] = useState(mockMessages)
   const [newMessage, setNewMessage] = useState("")

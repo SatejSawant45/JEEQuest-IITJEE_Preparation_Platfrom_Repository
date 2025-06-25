@@ -24,6 +24,7 @@ import BloggingPlatform from './pages/User/Blogs.jsx';
 import AdminProfile from './pages/Admin/AdminProfile.jsx';
 import Profile from './pages/User/Profile.jsx';
 import CurrnetQuiz from './pages/quiz/CurrentQuiz.jsx';
+import AdminInbox from './pages/Admin/AdminInbox.jsx';
 
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
                 </Route>
                 <Route path="/user/takequiz" element={<CurrnetQuiz></CurrnetQuiz>}></Route>
                 <Route path="admin/dashboard" element={<AdminDashboard></AdminDashboard>}></Route>
+                <Route path="admin/dashboard/chats" element={<AdminInbox></AdminInbox>}></Route>
                 <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>
                 <Route path="admin/quiz/:id/edit" element={<EditQuiz></EditQuiz>}></Route>
                 <Route path="/quiz/:id" element={<TakeQuiz></TakeQuiz>}></Route>

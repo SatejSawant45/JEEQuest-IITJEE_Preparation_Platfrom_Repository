@@ -33,6 +33,10 @@ export default function UserAuth()
                     console.log('Authentication sucessful',recievedToken);
 
                     localStorage.setItem("jwtToken", recievedToken);
+                    localStorage.setItem("id", responseData.id);
+                    localStorage.setItem("jwtToken", responseData.name);
+                    localStorage.setItem("jwtToken", responseData.email);
+                    localStorage.setItem("jwtToken", responseData.role);
                     navigate("/user/dashboard");
                 }
                 else
