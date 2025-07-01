@@ -73,10 +73,11 @@ export const deleteQuiz = async(req,res) =>
 
 }
 
-export const getQuizzes = async(req,res) => 
+export const getAllAvailableQuizzes = async(req,res) => 
 {
     try
     {
+        console.log("message from controller func");
         const quizzes = await Quiz.find()
             .populate('createdBy','name')
             .select('-questions.correctAnswer');

@@ -17,7 +17,7 @@ router.post('/',adminAuth,[
 router.put('/:id',adminAuth,quizController.updateQuiz);
 router.delete('/:id',adminAuth,quizController.deleteQuiz);
 
-router.get('/',auth,quizController.getQuizzes);
+router.get('/',auth,quizController.getAllAvailableQuizzes);
 router.get('/:id',auth,quizController.getQuiz);
 
 export default router;
