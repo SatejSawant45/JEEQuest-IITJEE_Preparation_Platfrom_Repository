@@ -77,7 +77,7 @@ const data = {
       items: [
         {
           title: "Mentors",
-          url:"mentors",
+          url:"admins",
         },
         {
           title: "Inbox",

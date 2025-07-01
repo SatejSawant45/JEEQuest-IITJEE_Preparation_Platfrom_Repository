@@ -17,45 +17,40 @@ import { useEffect, useState } from "react"
 
 import { NavLink,Outlet } from "react-router-dom"
 import { io } from 'socket.io-client'
+import { SocketContext } from "@/context/socket"
+import { useContext } from "react"
 
 export default function Page() {
  
     
 
-    const [socket,setSocket] = useState({});
-    const [msg,setMsg] = useState("");
-    const url = "http://localhost:5000/api/auth/login"
     const jwtToken = localStorage.getItem("jwtToken");
     const headerToken = "Bearer "+jwtToken;
     console.log(`headerToken : ${headerToken}`);
-    
-    
-    useEffect(()=>{
-        const userId = localStorage.getItem("id");
 
+    const socket = useContext(SocketContext);
+        
+    useEffect(()=>{
+
+        const userId = localStorage.getItem("id");
         console.log("Log from Dashbpard page")
 
-        const newSocket = io("http://localhost:7000");
+        socket.connect();
+
+        console.log(socket);
+        console.log(socket.id)
+
+        socket.on("message",(arg)=>{
+            console.log("Message : " , arg);
+        });
+
+        return () => {
+            socket.off("message");
+        };
+
         
-        newSocket.on("connect",()=>{
-            console.log(newSocket);
-            console.log('Student Connected');
-            console.log(newSocket.id);
-            console.log(userId);
-            
-            setSocket(socket);
-            console.log(socket);
 
-            const messageFromUser = { 
-                message : "hello from user",
-                user_Id : userId
-
-            }
-            socket.emit("message",JSON.stringify(messageFromUser))
-        })
-
-
-    },[]);
+    },[socket]);
 
 
 
