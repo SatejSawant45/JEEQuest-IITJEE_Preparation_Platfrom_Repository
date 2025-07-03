@@ -6,9 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Send, MoreVertical, Phone, Video, Paperclip, Smile } from "lucide-react";
 import io from "socket.io-client";
-import { useParams } from "react-router-dom";
-
-const socket = io("http://localhost:7000");
+import { useNavigate } from "react-router-dom";
+import IncomingCallDialog from "../IncommingVideoCall";
+import socket from "@/context/socket";
 
 export default function AdminInbox() {
   const [conversations, setConversations] = useState([]);
@@ -17,6 +17,20 @@ export default function AdminInbox() {
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [allUsers, setAllUsers] = useState([]);
+  const [userId, setUserId] = useState(null); // ✅ track selected userId
+  const [incomingCall, setIncomingCall] = useState(null);
+
+  const adminId = localStorage.getItem("id"); // ✅ Admin MongoDB _id
+  const navigate = useNavigate();
+
+  useEffect(() => {
+
+
+    if (adminId) {
+      socket.emit("register", { userId: adminId });
+      console.log("✅ Admin registered with socket:", adminId);
+    }
+  }, [adminId]);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/admin/conversations")
@@ -25,6 +39,7 @@ export default function AdminInbox() {
         setConversations(data);
         if (data.length > 0) {
           setActiveConversation(data[0]);
+          setUserId(data[0].userId); // ✅ Store userId from existing convo
         } else {
           fetch("http://localhost:5000/api/admin/users")
             .then(res => res.json())
@@ -44,12 +59,12 @@ export default function AdminInbox() {
         .then(data => {
           setMessages(data.map(msg => ({
             ...msg,
-            isOwn: msg.senderId === "admin"
+            isOwn: msg.senderId === adminId
           })));
         })
         .catch(err => console.error("Failed to load messages", err));
     }
-  }, [activeConversation]);
+  }, [activeConversation, adminId]);
 
   useEffect(() => {
     socket.on("receive_message", (data) => {
@@ -59,27 +74,50 @@ export default function AdminInbox() {
     return () => socket.off("receive_message");
   }, []);
 
+  useEffect(() => {
+    socket.on("incoming_call", ({ fromUserId, roomId, userName }) => {
+      setIncomingCall({ fromUserId, roomId, userName });
+    });
+
+    return () => {
+      socket.off("incoming_call");
+    };
+  }, []);
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeConversation) return;
 
     const message = {
-      roomId: activeConversation.roomId,
-      senderId: "admin",
+      room: activeConversation.roomId,
+      senderId: adminId,
+      senderRole: "admin",
       content: newMessage,
+      timestamp: new Date().toISOString()
     };
 
     socket.emit("send_message", message);
-    setMessages(prev => [
-      ...prev,
-      {
-        ...message,
-        isOwn: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      }
-    ]);
+    setMessages(prev => [...prev, { ...message, isOwn: true }]);
     setNewMessage("");
   };
+
+  const handleVideoCall = () => {
+  if (!adminId || !userId) return;
+
+  const roomId = `${adminId}_${userId}`;
+  const adminName = localStorage.getItem("name") || "Admin"; // 👈 Optional fallback
+
+  // 🔴 Emit call to user
+  socket.emit("call_user", {
+    fromAdminId: adminId,
+    toUserId: userId,
+    roomId,
+    adminName,
+  });
+
+  // ✅ Then navigate
+  navigate(`/videocall/${roomId}`);
+};
 
   const filteredConversations = conversations.filter((conv) =>
     conv.userName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -88,13 +126,6 @@ export default function AdminInbox() {
   const filteredUsers = allUsers.filter((user) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-
-                    const { userId } = useParams();
-                    const adminId = localStorage.getItem("id"); // ✅ get admin id
-                    console.log(userId);
-                    console.log(adminId);
-                    // const Id = mentorId.replace(/^:/, "");
 
   return (
     <div className="flex h-screen bg-background">
@@ -117,19 +148,19 @@ export default function AdminInbox() {
               filteredConversations.map((conversation) => (
                 <div
                   key={conversation.roomId}
-                  className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
-                    activeConversation?.roomId === conversation.roomId ? "bg-accent" : ""
-                  }`}
-                  onClick={() => setActiveConversation(conversation)}
+                  className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors ${activeConversation?.roomId === conversation.roomId ? "bg-accent" : ""
+                    }`}
+                  onClick={() => {
+                    setActiveConversation(conversation);
+                    setUserId(conversation.userId); // ✅ important for call
+                  }}
                 >
-                  <div className="relative">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src="/placeholder.svg" alt={conversation.userName} />
-                      <AvatarFallback>
-                        {conversation.userName.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src="/placeholder.svg" alt={conversation.userName} />
+                    <AvatarFallback>
+                      {conversation.userName.split(" ").map((n) => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="ml-3 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium truncate">{conversation.userName}</p>
@@ -145,32 +176,37 @@ export default function AdminInbox() {
                 </div>
               ))
             ) : (
-              filteredUsers.map((user) => (
-                <div
-                  key={user._id}
-                  className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                  onClick={() => {
-                    const newConversation = {
-                      roomId: `${adminId}_${userId}`,
-                      userName: user.name,
-                      unreadCount: 0,
-                      lastMessage: "",
-                      lastMessageTime: "",
-                    };
-                    setActiveConversation(newConversation);
-                    setConversations((prev) => [...prev, newConversation]);
-                  }}
-                >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src="/placeholder.svg" alt={user.name} />
-                    <AvatarFallback>{user.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">Start a new chat</p>
+              filteredUsers.map((user) => {
+                const roomId = `${adminId}_${user._id}`;
+                return (
+                  <div
+                    key={user._id}
+                    className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => {
+                      const newConversation = {
+                        roomId,
+                        userName: user.name,
+                        userId: user._id,
+                        unreadCount: 0,
+                        lastMessage: "",
+                        lastMessageTime: "",
+                      };
+                      setActiveConversation(newConversation);
+                      setUserId(user._id); // ✅ store user ID for call
+                      setConversations((prev) => [...prev, newConversation]);
+                    }}
+                  >
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src="/placeholder.svg" alt={user.name} />
+                      <AvatarFallback>{user.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">Start a new chat</p>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </ScrollArea>
@@ -197,7 +233,9 @@ export default function AdminInbox() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button variant="ghost" size="icon"><Phone className="h-5 w-5" /></Button>
-                  <Button variant="ghost" size="icon"><Video className="h-5 w-5" /></Button>
+                  <Button variant="ghost" size="icon" onClick={handleVideoCall}>
+                    <Video className="h-5 w-5" />
+                  </Button>
                   <Button variant="ghost" size="icon"><MoreVertical className="h-5 w-5" /></Button>
                 </div>
               </div>
@@ -207,14 +245,11 @@ export default function AdminInbox() {
               <div className="space-y-4">
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.isOwn ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        msg.isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
-                      }`}
-                    >
+                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
+                      }`}>
                       <p className="text-sm">{msg.content}</p>
                       <p className="text-xs mt-1 text-muted-foreground">
-                        {msg.timestamp || ""}
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                   </div>
@@ -250,6 +285,21 @@ export default function AdminInbox() {
           </div>
         )}
       </div>
+
+      <IncomingCallDialog
+        isOpen={!!incomingCall}
+        callerName={incomingCall?.userName || ""}
+        callerAvatar={"/placeholder.svg"} // Replace with real avatar if available
+        onAccept={() => {
+          if (incomingCall) {
+            navigate(`/videocall/${incomingCall.roomId}`);
+            setIncomingCall(null);
+          }
+        }}
+        onDecline={() => {
+          setIncomingCall(null); // Just close the dialog for now
+        }}
+      />
     </div>
   );
 }

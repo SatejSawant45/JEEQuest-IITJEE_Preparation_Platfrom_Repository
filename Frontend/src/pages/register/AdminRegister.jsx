@@ -11,8 +11,8 @@ export default function AdminRegister() {
     console.log('Admin (mentor) auth data:', data);
 
     const url = isLogin
-      ? 'http://localhost:5000/api/mentor/login'
-      : 'http://localhost:5000/api/mentor/register';
+      ? 'http://localhost:5000/api/admin/login'
+      : 'http://localhost:5000/api/admin/register';
 
     try {
       const response = await fetch(url, {

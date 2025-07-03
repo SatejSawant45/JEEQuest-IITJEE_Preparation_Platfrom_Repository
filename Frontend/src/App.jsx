@@ -27,7 +27,8 @@ import CurrnetQuiz from './pages/quiz/CurrentQuiz.jsx';
 import AdminInbox from './pages/Admin/AdminInbox.jsx';
 import { SocketContext } from './context/socket.js';
 import socket from './context/socket.js';
-
+import VideoCall from './pages/User/VideoCall.jsx';
+import AdminVideoCall from './pages/Admin/AdminVideoCall.jsx';
 
 function App() {
     return (
@@ -44,6 +45,7 @@ function App() {
                     <Route path="/admin/signup" element={<AdminRegister></AdminRegister>}></Route>
                     <Route path="/admin/profile" element={<AdminProfile></AdminProfile>}></Route>
                     <Route path="chat/:adminId" element={<Chats></Chats>}></Route>
+                    <Route path="/videocall/:roomId" element={<VideoCall />} />
                     <Route path="/user/dashboard" element={<Dashboard></Dashboard>}>
                         <Route path="chatbot" element={<ChatBot></ChatBot>}></Route>
                         <Route path="analysis" element={<AnalysisPage></AnalysisPage>}></Route>
@@ -58,6 +60,7 @@ function App() {
                     <Route path="admin/dashboard/chats" element={<AdminInbox></AdminInbox>}></Route>
                     <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>
                     <Route path="admin/quiz/:id/edit" element={<EditQuiz></EditQuiz>}></Route>
+                    <Route path="admin/videocall/:roomId" element={<AdminVideoCall></AdminVideoCall>} />
                     <Route path="/quiz/:id" element={<TakeQuiz></TakeQuiz>}></Route>
                 </Routes>
             </SocketContext.Provider>

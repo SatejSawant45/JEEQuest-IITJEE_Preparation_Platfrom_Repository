@@ -6,15 +6,19 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import VideoCall from "./VideoCall";
+import { io } from "socket.io-client";
+import IncomingCallDialog from "../IncommingVideoCall";
+import socket from "@/context/socket";
 
 export default function AdminsPage() {
   const [admins, setAdmins] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAdmins, setFilteredAdmins] = useState([]);
+  const [incomingCall, setIncomingCall] = useState(null);
 
   const navigate = useNavigate();
 
-  // ✅ Fetch mentors from backend on mount
   useEffect(() => {
     const fetchAdmins = async () => {
       try {
@@ -30,6 +34,22 @@ export default function AdminsPage() {
     fetchAdmins();
   }, []);
 
+
+  useEffect(() => {
+    const userId = localStorage.getItem("id");
+    if (userId) {
+      socket.emit("register", { userId }); // 👈 Register user with socket
+    }
+
+    socket.on("incoming_call", ({ fromAdminId, roomId, adminName }) => {
+      console.log("📞 Incoming call from admin:", adminName);
+      setIncomingCall({ fromAdminId, roomId, adminName });
+    });
+    return () => {
+      socket.off("incoming_call");
+    };
+  }, []);
+
   const handleSearch = (value) => {
     setSearchTerm(value);
     const filtered = admins.filter(
@@ -42,13 +62,35 @@ export default function AdminsPage() {
     setFilteredAdmins(filtered);
   };
 
-  const handleChatConnect = (adminId) => {
-  navigate(`/chat/:${adminId}`);
-};
 
-  const handleVideoCall = (adminName) => {
-    alert(`Starting video call with ${adminName}`);
+
+  const handleChatConnect = (adminId) => {
+    navigate(`/chat/${adminId}`);
   };
+
+  const handleVideoCall = (adminId) => {
+    const userId = localStorage.getItem("id");
+    const userName = localStorage.getItem("name"); // or however you store the user name
+
+    if (!userId) {
+      alert("You must be logged in to start a video call.");
+      return;
+    }
+
+    const roomId = `${adminId}_${userId}`;
+
+    // 🔴 Emit "call_user" to notify the admin in real-time
+    socket.emit("call_user", {
+      fromUserId: userId,
+      toAdminId: adminId,
+      roomId,
+      userName,
+    });
+
+    // ✅ Redirect user to video call page
+    navigate(`/videocall/${roomId}`);
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -152,9 +194,8 @@ export default function AdminsPage() {
                 {/* Availability */}
                 <div className="flex items-center">
                   <div
-                    className={`h-2 w-2 rounded-full mr-2 ${
-                      admin.availability === "Available now" ? "bg-green-400" : "bg-yellow-400"
-                    }`}
+                    className={`h-2 w-2 rounded-full mr-2 ${admin.availability === "Available now" ? "bg-green-400" : "bg-yellow-400"
+                      }`}
                   />
                   <span className="text-sm text-gray-600">
                     {admin.availability || "Check back later"}
@@ -197,6 +238,20 @@ export default function AdminsPage() {
           </div>
         )}
       </div>
+      <IncomingCallDialog
+        isOpen={!!incomingCall}
+        callerName={incomingCall?.adminName || "Mentor"}
+        callerAvatar={"/placeholder.svg"} // Optional: replace with actual avatar
+        onAccept={() => {
+          if (incomingCall) {
+            navigate(`/videocall/${incomingCall.roomId}`);
+            setIncomingCall(null);
+          }
+        }}
+        onDecline={() => {
+          setIncomingCall(null);
+        }}
+      />
     </div>
   );
 }
