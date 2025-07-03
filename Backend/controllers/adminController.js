@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
+import bcrypt from 'bcryptjs';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, "satejsawantsecret", { expiresIn: '7d' });
@@ -31,6 +32,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
+    console.log('hello')
     const errors = validationResult(req);
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
@@ -38,13 +40,15 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     const admin = await Admin.findOne({ email });
-    if (!admin || !(await admin.comparePassword(password)))
+    console.log(admin)
+    if (!admin || !bcrypt.compare(admin.password,password))
       return res.status(401).json({ message: "Invalid credentials" });
 
     const token = generateToken(admin._id);
     res.status(200).json({ id: admin._id, name: admin.name, email: admin.email, token });
 
   } catch (err) {
+    console.log(err)
     res.status(500).json({ message: "Server Error" });
   }
 };
