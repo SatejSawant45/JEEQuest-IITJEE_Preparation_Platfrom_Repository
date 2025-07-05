@@ -25,8 +25,9 @@ export default function UserAuth()
                     body: JSON.stringify(data),
                 });
 
+
                 const responseData = await response.json(); 
-                
+                console.log(responseData);
                 if(response.ok)
                 {
                     const recievedToken  = responseData.token;
@@ -34,9 +35,9 @@ export default function UserAuth()
 
                     localStorage.setItem("jwtToken", recievedToken);
                     localStorage.setItem("id", responseData.id);
-                    localStorage.setItem("jwtToken", responseData.name);
-                    localStorage.setItem("jwtToken", responseData.email);
-                    localStorage.setItem("jwtToken", responseData.role);
+                    localStorage.setItem("name", responseData.name);
+                    localStorage.setItem("email", responseData.email);
+                    localStorage.setItem("role", responseData.role);
                     navigate("/user/dashboard");
                 }
                 else

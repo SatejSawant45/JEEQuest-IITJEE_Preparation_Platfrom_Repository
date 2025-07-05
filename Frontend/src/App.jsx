@@ -23,7 +23,7 @@ import VideoLecturesPage from './pages/User/VideoLecturePage.jsx';
 import BloggingPlatform from './pages/User/Blogs.jsx';
 import AdminProfile from './pages/Admin/AdminProfile.jsx';
 import Profile from './pages/User/Profile.jsx';
-import CurrnetQuiz from './pages/quiz/CurrentQuiz.jsx';
+import CurrentQuiz from './pages/quiz/CurrentQuiz.jsx';
 import AdminInbox from './pages/Admin/AdminInbox.jsx';
 import { SocketContext } from './context/socket.js';
 import socket from './context/socket.js';
@@ -55,7 +55,8 @@ function App() {
                         <Route path="quizzes" element={<QuizPage></QuizPage>}></Route>
                         <Route path="profile" element={<Profile></Profile>}></Route>
                     </Route>
-                    <Route path="/user/takequiz" element={<CurrnetQuiz></CurrnetQuiz>}></Route>
+
+                    <Route path="/user/takequiz/:id" element={<CurrentQuiz></CurrentQuiz>}></Route>
                     <Route path="admin/dashboard" element={<AdminDashboard></AdminDashboard>}></Route>
                     <Route path="admin/dashboard/chats" element={<AdminInbox></AdminInbox>}></Route>
                     <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>

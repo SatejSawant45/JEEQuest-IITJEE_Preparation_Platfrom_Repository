@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavLink,Outlet} from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
@@ -77,7 +77,7 @@ const data = {
       items: [
         {
           title: "Mentors",
-          url:"admins",
+          url: "admins",
         },
         {
           title: "Inbox",
@@ -86,6 +86,10 @@ const data = {
         {
           title: "ChatBot",
           url: "chatbot",
+        },
+        {
+          name: "Quizzes",
+          url: "quizzes",
         },
       ],
     },
@@ -138,15 +142,11 @@ const data = {
   ],
   projects: [
     {
-      name: "Quizzes",
-      url: "quizzes",
-      icon: PieChart,
-    },
-    {
       name: "Travel",
       url: "#",
       icon: Map,
     },
+
   ],
 }
 

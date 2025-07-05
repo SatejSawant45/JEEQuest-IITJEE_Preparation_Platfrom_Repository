@@ -3,6 +3,7 @@ import { useLocation, useNavigate , Link } from 'react-router-dom';
 // import UserAuthForm from "../../componants/AuthComponants/UserAuthFrom.jsx"
 import UserRegisterForm from '../../nonshadcncomponants/RegisterComponants/UserRegisterForm.jsx';
 
+
 export default function UserRegister()
 {
     const navigate = useNavigate();

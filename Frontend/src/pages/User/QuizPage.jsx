@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Clock, Users, BookOpen, Star, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,109 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-
-// Sample quiz data
-const quizzes = [
-  {
-    id: 1,
-    title: "JavaScript Fundamentals",
-    subject: "Programming",
-    description: "Test your knowledge of JavaScript basics including variables, functions, and DOM manipulation.",
-    duration: 30,
-    questions: 25,
-    difficulty: "Beginner",
-    participants: 1250,
-    rating: 4.8,
-    tags: ["JavaScript", "Web Development", "Frontend"],
-  },
-  {
-    id: 2,
-    title: "React Hooks Deep Dive",
-    subject: "Programming",
-    description: "Advanced quiz covering useState, useEffect, useContext, and custom hooks in React.",
-    duration: 45,
-    questions: 30,
-    difficulty: "Advanced",
-    participants: 890,
-    rating: 4.9,
-    tags: ["React", "Hooks", "Frontend"],
-  },
-  {
-    id: 3,
-    title: "World History: Ancient Civilizations",
-    subject: "History",
-    description: "Explore the rise and fall of ancient civilizations including Egypt, Rome, and Greece.",
-    duration: 40,
-    questions: 35,
-    difficulty: "Intermediate",
-    participants: 2100,
-    rating: 4.6,
-    tags: ["Ancient History", "Civilizations", "Culture"],
-  },
-  {
-    id: 4,
-    title: "Calculus I: Limits and Derivatives",
-    subject: "Mathematics",
-    description: "Comprehensive quiz on limits, continuity, and basic differentiation techniques.",
-    duration: 60,
-    questions: 40,
-    difficulty: "Advanced",
-    participants: 750,
-    rating: 4.7,
-    tags: ["Calculus", "Derivatives", "Limits"],
-  },
-  {
-    id: 5,
-    title: "Cell Biology Basics",
-    subject: "Science",
-    description: "Understanding cell structure, organelles, and basic cellular processes.",
-    duration: 35,
-    questions: 28,
-    difficulty: "Beginner",
-    participants: 1800,
-    rating: 4.5,
-    tags: ["Biology", "Cells", "Life Science"],
-  },
-  {
-    id: 6,
-    title: "Python Data Structures",
-    subject: "Programming",
-    description: "Master lists, dictionaries, sets, and tuples in Python programming.",
-    duration: 25,
-    questions: 20,
-    difficulty: "Intermediate",
-    participants: 1450,
-    rating: 4.8,
-    tags: ["Python", "Data Structures", "Programming"],
-  },
-  {
-    id: 7,
-    title: "Shakespeare's Greatest Works",
-    subject: "Literature",
-    description: "Test your knowledge of Hamlet, Romeo and Juliet, Macbeth, and other classics.",
-    duration: 50,
-    questions: 32,
-    difficulty: "Intermediate",
-    participants: 980,
-    rating: 4.4,
-    tags: ["Shakespeare", "Drama", "Classic Literature"],
-  },
-  {
-    id: 8,
-    title: "Organic Chemistry Reactions",
-    subject: "Science",
-    description: "Complex organic reactions, mechanisms, and synthesis pathways.",
-    duration: 55,
-    questions: 38,
-    difficulty: "Advanced",
-    participants: 650,
-    rating: 4.6,
-    tags: ["Chemistry", "Organic", "Reactions"],
-  },
-];
-
-const subjects = ["All Subjects", ...Array.from(new Set(quizzes.map((quiz) => quiz.subject)))];
-const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
+import { useNavigate } from "react-router-dom";
 
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -127,20 +25,49 @@ export default function QuizPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels");
+  const [quizzes, setQuizzes] = useState([]); // 🔁 dynamic quizzes
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        const token = localStorage.getItem("jwtToken"); // or wherever you store it
+        const res = await fetch("http://localhost:5000/api/quiz", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch quizzes");
+        }
+
+        const data = await res.json();
+        setQuizzes(data.quizzes); // 👈 update state with backend quizzes
+      } catch (error) {
+        console.error("Error fetching quizzes:", error);
+      }
+    };
+
+    fetchQuizzes();
+  }, []);
+
+  const subjects = useMemo(() => ["All Subjects", ...Array.from(new Set(quizzes.map((quiz) => quiz.subject)))], [quizzes]);
+  const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
 
   const filteredQuizzes = useMemo(() => {
     return quizzes.filter((quiz) => {
       const matchesSearch =
         quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         quiz.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        quiz.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+        quiz.tags?.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesSubject = selectedSubject === "All Subjects" || quiz.subject === selectedSubject;
       const matchesDifficulty = selectedDifficulty === "All Levels" || quiz.difficulty === selectedDifficulty;
 
       return matchesSearch && matchesSubject && matchesDifficulty;
     });
-  }, [searchTerm, selectedSubject, selectedDifficulty]);
+  }, [searchTerm, selectedSubject, selectedDifficulty, quizzes]);
 
   const groupedQuizzes = useMemo(() => {
     const grouped = {};
@@ -152,7 +79,6 @@ export default function QuizPage() {
     });
     return grouped;
   }, [filteredQuizzes]);
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -233,7 +159,7 @@ export default function QuizPage() {
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {subjectQuizzes.map((quiz) => (
-                    <Card key={quiz.id} className="hover:shadow-lg transition-shadow duration-200">
+                    <Card key={quiz._id} className="hover:shadow-lg transition-shadow duration-200">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-lg leading-tight">{quiz.title}</CardTitle>
@@ -250,7 +176,7 @@ export default function QuizPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <BookOpen className="h-4 w-4 text-muted-foreground" />
-                            <span>{quiz.questions}q</span>
+                            <span>{quiz.questions.length}q</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Users className="h-4 w-4 text-muted-foreground" />
@@ -279,7 +205,9 @@ export default function QuizPage() {
                           )}
                         </div>
 
-                        <Button className="w-full">Start Quiz</Button>
+                        <Button className="w-full" onClick={() => navigate(`/user/takequiz/${quiz._id}`)}>
+                          Start Quiz
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
