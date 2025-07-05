@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useMemo } from "react";
 import { Search, Clock, Users, BookOpen, Star, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
