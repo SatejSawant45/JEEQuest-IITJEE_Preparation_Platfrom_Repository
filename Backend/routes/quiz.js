@@ -7,11 +7,15 @@ import { adminAuth , auth } from "../middlewares/auth.js";
 const router = express.Router();
 
 router.post('/',adminAuth,[
-    body('title').trim().notEmpty(),
-    body('description').trim().notEmpty(),
-    body('duration').isInt({ min : 1 }),
-    body('question').isArray({ min : 1 })
-],quizController.createQuiz);
+    body("title").notEmpty(),
+    body("description").notEmpty(),
+    body("subject").notEmpty(),
+    body("duration").isNumeric(),
+    body("questions.*.question").notEmpty(), // 👈 this one!
+    body("questions.*.type").notEmpty(),
+    body("questions.*.answers").isArray({ min: 2 }),
+    body("questions.*.points").isNumeric(),
+  ],quizController.createQuiz);
 
 
 router.put('/:id',adminAuth,quizController.updateQuiz);

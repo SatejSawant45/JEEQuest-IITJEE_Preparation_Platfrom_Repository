@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 
 export const auth = async (req, res, next) => {
     console.log("in middleware");
@@ -28,15 +29,28 @@ export const auth = async (req, res, next) => {
 }
 
 export const adminAuth = async (req, res, next) => {
+    console.log("in admin middleware");
     try {
-        await auth(req, res, () => {
-            if (req.user.role !== 'admin') {
-                return res.status(403).json({ message: 'Admin access required' });
-            }
-            next();
-        })
+        const token = req.header('Authorization')?.replace('Bearer', '').replace(' ','');
+        console.log(token)
+        if (!token) {
+            throw new Error();
+        }
+        const decoded = jwt.verify(token, "satejsawantsecret");
+        console.log(decoded);
+        const admin = await Admin.findById(decoded.id);
+        console.log(admin);
+        console.log("admin loged");
+        if (!admin) {
+            throw new Error();
+        }
+
+        req.user = admin;
+
+        next();
     } catch (error) {
-        res.status(401).json({ message: 'Please authenticate' });
+        console.log(error)
+        res.status(401).json({ message: 'Please authenticate !!' });
     }
 
 }

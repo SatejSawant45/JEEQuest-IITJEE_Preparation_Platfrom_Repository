@@ -1,16 +1,25 @@
 import mongoose from "mongoose";
 
 const answerSchema = new mongoose.Schema({
-    
-    questionId:{
-        type:mongoose.Schema.Types.ObjectId,
-        required:true
-    },
-    selectedOption:{
-        type:Number,
-        required:true,
-    }
+  questionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Quiz.questions", // optional: for better population or reference clarity
+    required: true,
+  },
+  selectedOption: {
+    type: Number, // index of the selected option (0-based)
+    required: true,
+  },
+  isCorrect: {
+    type: Boolean, // optional: store correctness for quick access
+    default: null,
+  },
+  marksObtained: {
+    type: Number, // optional: useful for partial scoring / analytics
+    default: 0,
+  },
 });
+
 
 
 

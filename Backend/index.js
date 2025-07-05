@@ -19,11 +19,11 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 app.use(cors({
-    origin: '*',  
-    methods: ['GET', 'POST'],        
+  origin: 'http://localhost:5173', // ← use the actual port your frontend runs on
+  credentials: true
 }));
 
 mongoose.connect(process.env.MONGO_URI)
