@@ -22,7 +22,7 @@ const app = express();
 // app.use(cors());
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:5173','https://quiz-website-ecru-kappa.vercel.app'], // ← use the actual port your frontend runs on
+  origin: ['http://localhost:5173','https://quiz-website-ecru-kappa.vercel.app', 'https://jeequest.satejsawant.space'], // ← use the actual port your frontend runs on
   credentials: true
 }));
 
