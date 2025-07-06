@@ -2,7 +2,6 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import fetch from 'node-fetch'; // For Node.js < v18
 import { config } from 'dotenv';
 const app = express();
 app.use(express.json());
