@@ -45,9 +45,10 @@ app.use('/api/attempt',attemptRoutes);
 app.use('/api/leaderboard',leaderboardRoutes);
 
 
-app.post('/api/auth/register', (req, res) => {
+app.get('/', (req, res) => {
     res.send('Server is working!');
 });
+
 
 const PORT = 5000;
 

@@ -7,12 +7,14 @@ export default function AdminAuth() {
   const location = useLocation();
   const isLogin = location.pathname === '/admin/login';
 
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
+
   const HandleSubmit = async (data) => {
     console.log('Admin auth data:', data);
 
     const url = isLogin
-      ? 'http://localhost:5000/api/admin/login'
-      : 'http://localhost:5000/api/admin/register'; // Make sure this exists in your backend if using signup
+      ? `${primaryBackendUrl}/api/admin/login`
+      : `${primaryBackendUrl}/api/admin/register`; // Make sure this exists in your backend if using signup
 
     try {
       const response = await fetch(url, {

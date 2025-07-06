@@ -3,10 +3,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import fetch from 'node-fetch'; // For Node.js < v18
-
+import { config } from 'dotenv';
 const app = express();
 app.use(express.json());
 app.use(cors());
+config()
 
 // HTTP + WebSocket Server
 const httpServer = createServer(app);
@@ -66,7 +67,7 @@ io.on('connection', (socket) => {
 
     // Save to MongoDB via REST API
     try {
-      const response = await fetch("http://localhost:5000/api/messages/save", {
+      const response = await fetch(`${process.env.MAIN_SERVER_URI}/api/messages/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ room, content, senderId, senderRole, timestamp })

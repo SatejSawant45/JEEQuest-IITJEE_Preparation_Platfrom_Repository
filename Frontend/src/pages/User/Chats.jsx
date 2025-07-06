@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,7 +23,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const bottomRef = useRef(null);
-
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
   // ✅ Join room and fetch old messages
   useEffect(() => {
     if (!roomId) return;
@@ -35,7 +33,7 @@ export default function ChatPage() {
 
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/messages/${roomId}`);
+        const res = await fetch(`${primaryBackendUrl}/api/messages/${roomId}`);
         const data = await res.json();
         const formatted = data.map(msg => ({
           ...msg,
@@ -49,7 +47,7 @@ export default function ChatPage() {
 
     const fetchAdmin = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/admin/${cleanAdminId}`);
+        const res = await fetch(`${primaryBackendUrl}/api/admin/${cleanAdminId}`);
         const data = await res.json();
         console.log(data);
         setAdmin({

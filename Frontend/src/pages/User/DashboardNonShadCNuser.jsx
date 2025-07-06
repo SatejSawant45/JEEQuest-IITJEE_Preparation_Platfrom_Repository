@@ -36,10 +36,11 @@ const mockLeaderboard = [
 export default function UserDashboard() {
 
     const [quizdata, setQuizdata] = useState([]);
+    const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
     async function getQuizes() {
 
-        const url = 'http://localhost:5000/api/quiz';
+        const url = `${primaryBackendUrl}/api/quiz`;
         let token = localStorage.getItem('jwtToken');
         console.log(token);
 

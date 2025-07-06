@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Camera, CameraOff, MessageSquare, Mic, MicOff, PhoneOff } from "lucide-react"
-
-const socket = io("http://localhost:7000")
+import socket from "@/context/socket.js"
 
 export default function AdminVideoCall() {
   const { roomId } = useParams()

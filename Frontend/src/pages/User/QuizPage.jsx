@@ -27,12 +27,13 @@ export default function QuizPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels");
   const [quizzes, setQuizzes] = useState([]); // 🔁 dynamic quizzes
   const navigate = useNavigate();
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
         const token = localStorage.getItem("jwtToken"); // or wherever you store it
-        const res = await fetch("http://localhost:5000/api/quiz", {
+        const res = await fetch(`${primaryBackendUrl}/api/quiz`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

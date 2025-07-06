@@ -28,12 +28,13 @@ export default function CurrentQuiz() {
   const [flaggedQuestions, setFlaggedQuestions] = useState(new Set())
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
   const [error, setError] = useState(null)
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
         const token = localStorage.getItem("jwtToken");
-        const res = await fetch(`http://localhost:5000/api/quiz/${id}`, {
+        const res = await fetch(`${primaryBackendUrl}/api/quiz/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

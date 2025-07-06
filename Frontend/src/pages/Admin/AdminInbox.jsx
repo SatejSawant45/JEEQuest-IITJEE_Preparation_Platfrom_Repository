@@ -23,6 +23,8 @@ export default function AdminInbox() {
   const adminId = localStorage.getItem("id"); // ✅ Admin MongoDB _id
   const navigate = useNavigate();
 
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
+
   useEffect(() => {
 
 
@@ -33,7 +35,7 @@ export default function AdminInbox() {
   }, [adminId]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/admin/conversations")
+    fetch(`${primaryBackendUrl}/api/admin/conversations`)
       .then(res => res.json())
       .then(data => {
         setConversations(data);
@@ -41,7 +43,7 @@ export default function AdminInbox() {
           setActiveConversation(data[0]);
           setUserId(data[0].userId); // ✅ Store userId from existing convo
         } else {
-          fetch("http://localhost:5000/api/admin/users")
+          fetch(`${primaryBackendUrl}/api/admin/users`)
             .then(res => res.json())
             .then(users => setAllUsers(users))
             .catch(err => console.error("Failed to load users", err));
@@ -54,7 +56,7 @@ export default function AdminInbox() {
     if (activeConversation) {
       socket.emit("join_room", activeConversation.roomId);
 
-      fetch(`http://localhost:5000/api/messages/${activeConversation.roomId}`)
+      fetch(`${primaryBackendUrl}/api/messages/${activeConversation.roomId}`)
         .then(res => res.json())
         .then(data => {
           setMessages(data.map(msg => ({

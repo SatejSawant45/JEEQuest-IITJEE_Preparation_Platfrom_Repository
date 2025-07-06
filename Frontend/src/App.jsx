@@ -13,7 +13,6 @@ import AdminRegisterForm from './nonshadcncomponants/RegisterComponants/AdminReg
 import UserRegisterForm from './nonshadcncomponants/RegisterComponants/UserRegisterForm.jsx';
 import UserRegister from './pages/register/UserRegister.jsx';
 import AdminRegister from './pages/register/AdminRegister.jsx';
-import Dashboard from './pages/User/Dashboard.jsx';
 import ChatBot from './pages/User/ChatBot.jsx';
 import Chats from './pages/User/Chats.jsx';
 import AnalysisPage from './pages/User/AnalysisPage.jsx';
@@ -29,6 +28,8 @@ import { SocketContext } from './context/socket.js';
 import socket from './context/socket.js';
 import VideoCall from './pages/User/VideoCall.jsx';
 import AdminVideoCall from './pages/Admin/AdminVideoCall.jsx';
+import DashboardLayout from './pages/User/DashboardLayout.jsx';
+import HomeDashboard from './pages/User/HomeDashboard.jsx';
 
 function App() {
     return (
@@ -46,7 +47,8 @@ function App() {
                     <Route path="/admin/profile" element={<AdminProfile></AdminProfile>}></Route>
                     <Route path="chat/:adminId" element={<Chats></Chats>}></Route>
                     <Route path="/videocall/:roomId" element={<VideoCall />} />
-                    <Route path="/user/dashboard" element={<Dashboard></Dashboard>}>
+                    <Route path="/user/dashboard" element={<DashboardLayout></DashboardLayout>}>
+                        <Route index element={<HomeDashboard/>}></Route>
                         <Route path="chatbot" element={<ChatBot></ChatBot>}></Route>
                         <Route path="analysis" element={<AnalysisPage></AnalysisPage>}></Route>
                         <Route path="blogs" element={<BloggingPlatform></BloggingPlatform>}></Route>

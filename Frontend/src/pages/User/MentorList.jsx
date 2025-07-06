@@ -16,13 +16,13 @@ export default function AdminsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [incomingCall, setIncomingCall] = useState(null);
-
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAdmins = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/admin/all");
+        const res = await fetch(`${primaryBackendUrl}/api/admin/all`);
         const data = await res.json();
         setAdmins(data);
         setFilteredAdmins(data);

@@ -8,13 +8,14 @@ export default function UserAuth()
     const navigate = useNavigate();
     const location = useLocation();
     const isLogin = location.pathname === '/user/login';
+    const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
     const HandleSubmit = async(data) =>{
         
         console.log('User auth data',data);
         // TODO: Implement actual authentication
 
-        const url = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
+        const url = isLogin ? `${primaryBackendUrl}/api/auth/login` : `${primaryBackendUrl}/api/auth/register`;
         
             try{
                 const response = await fetch(url,{

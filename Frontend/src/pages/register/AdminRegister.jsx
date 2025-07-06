@@ -6,13 +6,14 @@ export default function AdminRegister() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLogin = location.pathname === '/admin/login';
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
   const handleSubmit = async (data) => {
     console.log('Admin (mentor) auth data:', data);
 
     const url = isLogin
-      ? 'http://localhost:5000/api/admin/login'
-      : 'http://localhost:5000/api/admin/register';
+      ? `${primaryBackendUrl}/api/admin/login`
+      : `${primaryBackendUrl}/api/admin/register`;
 
     try {
       const response = await fetch(url, {

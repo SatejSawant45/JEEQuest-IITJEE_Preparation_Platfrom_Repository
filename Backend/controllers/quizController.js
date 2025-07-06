@@ -1,5 +1,6 @@
 import Quiz from '../models/Quiz.js';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 
 
 export const createQuiz = async (req, res) => {
@@ -219,21 +220,31 @@ export const getAllAvailableQuizzes = async (req, res) => {
   }
 };
 
+
 export const getQuiz = async (req, res) => {
   try {
     const quizId = req.params.id;
+    console.log("Requested Quiz ID:", quizId);
 
-    // 🔒 Check for valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(quizId)) {
       return res.status(400).json({ message: "Invalid quiz ID" });
     }
 
     const quiz = await Quiz.findById(quizId)
       .populate("createdBy", "name")
-      .select("-questions.correctAnswer");
+      .lean(); // converts to plain JS object early
+
+    console.log(quiz);
 
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    quiz.questions = quiz.questions.map(({ correctAnswer, ...q }) => q);
+
+    // fallback if createdBy doesn't exist
+    if (!quiz.createdBy) {
+      quiz.createdBy = { value: "Unknown" };
     }
 
     res.status(200).json(quiz);
@@ -242,4 +253,6 @@ export const getQuiz = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 

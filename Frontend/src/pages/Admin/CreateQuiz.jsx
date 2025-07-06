@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2, Save, Eye, Settings } from "lucide-react";
 
 export default function CreateQuiz() {
+    const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
     const [quiz, setQuiz] = useState({
         title: "",
         description: "",
@@ -121,7 +122,7 @@ export default function CreateQuiz() {
 
         try {
             let token = localStorage.getItem('jwtToken');
-            const response = await fetch("http://localhost:5000/api/quiz", {
+            const response = await fetch(`${primaryBackendUrl}/api/quiz`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -21,7 +21,7 @@ import { SocketContext } from "@/context/socket"
 import { useContext } from "react"
 import HomeDashboard from "./HomeDashboard"
 
-export default function Page() {
+export default function DashboardLayout() {
  
     
 
@@ -85,9 +85,6 @@ export default function Page() {
           </div>
         </header>
             <Outlet></Outlet>
-
-            <HomeDashboard></HomeDashboard>
-        
 
       </SidebarInset>
     </SidebarProvider>
