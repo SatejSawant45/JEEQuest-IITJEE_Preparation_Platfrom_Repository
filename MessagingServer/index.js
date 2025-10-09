@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
   socket.on("call_user", ({ fromUserId, toAdminId, roomId, userName }) => {
     const targetSocketId = userToSocketMap[toAdminId];
     if (targetSocketId) {
-      console.log(`📲 Sending incoming_call to ${toAdminId}`);
+      console.log(`Sending incoming_call to ${toAdminId}`);
       io.to(targetSocketId).emit("incoming_call", { fromUserId, roomId, userName });
     } else {
       console.warn(`Admin ${toAdminId} is not registered or disconnected`);
