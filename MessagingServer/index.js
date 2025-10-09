@@ -8,7 +8,6 @@ app.use(express.json());
 app.use(cors());
 config()
 
-// HTTP + WebSocket Server
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
@@ -44,18 +43,15 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Join Chat or Call Room ───────────────────────────────
   socket.on("join_room", (roomId) => {
     socket.join(roomId);
     console.log(`📌 Socket ${socket.id} joined room ${roomId}`);
   });
 
-  // ─── Handle Text Messages ────────────────────────────────
   socket.on("send_message", async (data) => {
     const { room, content, senderId, senderRole, timestamp } = data;
     console.log("💬 Message received:", data);
 
-    // Broadcast to other users in the room
     socket.to(room).emit("receive_message", {
       room,
       content,
@@ -64,7 +60,6 @@ io.on('connection', (socket) => {
       timestamp
     });
 
-    // Save to MongoDB via REST API
     try {
       const response = await fetch(`${process.env.MAIN_SERVER_URI}/api/messages/save`, {
         method: "POST",
@@ -81,7 +76,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── WebRTC Signaling for Video Call ─────────────────────
   socket.on("webrtc_offer", ({ roomId, offer }) => {
     console.log(`📡 Offer received from ${socket.id} for room ${roomId}`);
     socket.to(roomId).emit("webrtc_offer", { offer, senderId: socket.id });
@@ -97,13 +91,11 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit("ice_candidate", { candidate, senderId: socket.id });
   });
 
-  // ─── Disconnect ───────────────────────────────────────────
   socket.on('disconnect', () => {
     console.log("⛔ User disconnected:", socket.id);
   });
 });
 
-// ─── Start Server ─────────────────────────────────────────────
 httpServer.listen(7000, () => {
   console.log("🚀 Messaging server with WebRTC signaling running on port 7000");
 });
