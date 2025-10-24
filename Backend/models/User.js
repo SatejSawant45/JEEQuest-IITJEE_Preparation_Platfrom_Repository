@@ -22,6 +22,66 @@ const userSchema = new mongoose.Schema({
         type:String,
         enum:['user','admin'],
         default:'user'
+    },
+    // Profile Information
+    phone:{
+        type:String,
+        trim:true
+    },
+    location:{
+        type:String,
+        trim:true
+    },
+    university:{
+        type:String,
+        trim:true
+    },
+    course:{
+        type:String,
+        trim:true
+    },
+    year:{
+        type:String,
+        trim:true
+    },
+    gpa:{
+        type:String,
+        trim:true
+    },
+    graduationYear:{
+        type:String,
+        trim:true
+    },
+    about:{
+        type:String,
+        trim:true,
+        maxlength:500
+    },
+    skills:{
+        type:[String],
+        default:[]
+    },
+    interests:{
+        type:[String],
+        default:[]
+    },
+    profilePicture:{
+        type:String, // URL to profile picture
+        trim:true
+    },
+    socialLinks:{
+        linkedin:{
+            type:String,
+            trim:true
+        },
+        github:{
+            type:String,
+            trim:true
+        },
+        portfolio:{
+            type:String,
+            trim:true
+        }
     }
 
 },{

@@ -8,10 +8,10 @@ const router = express.Router();
 
 router.post('/:quizId/start',auth,attemptController.startAttempt);
 
-router.post('/:quizId/submit',auth,[
-    body('answers').isArray()
-],attemptController.submitAttempt);
+router.post('/:quizId/submit',auth,attemptController.submitAttempt);
 
 router.get('/user',auth,attemptController.getUserAttempts);
+
+router.delete('/user/clear',auth,attemptController.clearUserAttempts);
 
 export default router;

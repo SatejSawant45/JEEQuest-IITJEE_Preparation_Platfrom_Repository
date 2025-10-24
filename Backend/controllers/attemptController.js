@@ -39,47 +39,83 @@ export const submitAttempt = async(req,res) => {
 
     try
     {
-        const attempt = await Attempt.findOne({
-            quiz: req.params.id,
-            user: req.user._id,
-            completedAt:null
-        });
-
-        if(!attempt)
-        {
-            return res.status(404).json({message:"No active attempt found"});
-        }
-
-        const quiz = await Quiz.findById(req.params.id);
+        const quizId = req.params.quizId;
+        const quiz = await Quiz.findById(quizId);
+        
         if(!quiz)
         {
             return res.status(404).json({message:"Quiz not found"});
         }
 
-            let score = 0;
-            req.body.answers.forEach(answer => 
-            {
-                const question = quiz.questions.id(answer.questionId);
-                if(question && question.correctAnswer ===  answer.selectedOption)
-                {
-                    score = score + question.marks;
-                }
+        // Calculate score and process answers
+        let totalScore = 0;
+        let earnedMarks = 0;
+        let correctAnswers = 0;
+        const processedAnswers = [];
 
+        // req.body.answers is expected to be an object with questionIndex as key and selectedOption as value
+        const userAnswers = req.body.answers || {};
+
+        quiz.questions.forEach((question, index) => {
+            const userAnswer = userAnswers[index];
+            const questionMarks = question.marks || 1;
+            totalScore += questionMarks;
+
+            let isCorrect = false;
+            let marksObtained = 0;
+
+            if (userAnswer !== undefined && userAnswer === question.correctAnswer) {
+                isCorrect = true;
+                marksObtained = questionMarks;
+                earnedMarks += questionMarks;
+                correctAnswers++;
+            }
+
+            processedAnswers.push({
+                questionId: question._id,
+                selectedOption: userAnswer !== undefined ? userAnswer : -1, // -1 for unanswered
+                isCorrect,
+                marksObtained
             });
+        });
 
-            attempt.answers = req.body.answers;
-            attempt.score = score;
-            attempt.completedAt = new Date();
-            await attempt.save();
+        const percentage = totalScore > 0 ? (earnedMarks / totalScore) * 100 : 0;
 
-            res.json(attempt);
-        
+        // Create new attempt record
+        const attempt = await Attempt.create({
+            quiz: quizId,
+            user: req.user._id,
+            answers: processedAnswers,
+            score: earnedMarks,
+            totalMarks: totalScore,
+            percentage: Math.round(percentage * 10) / 10,
+            correctAnswers,
+            totalQuestions: quiz.questions.length,
+            completedAt: new Date()
+        });
 
-       
+        // Populate quiz details for response
+        await attempt.populate('quiz', 'title duration');
+
+        res.status(201).json({
+            success: true,
+            attempt: {
+                _id: attempt._id,
+                quiz: attempt.quiz,
+                score: attempt.score,
+                totalMarks: attempt.totalMarks,
+                percentage: attempt.percentage,
+                correctAnswers: attempt.correctAnswers,
+                totalQuestions: attempt.totalQuestions,
+                completedAt: attempt.completedAt,
+                answers: attempt.answers
+            }
+        });
 
     }
     catch(error)
     {
+        console.error('Submit attempt error:', error);
         res.status(500).json({message:"server error" });
     }
 
@@ -88,7 +124,7 @@ export const submitAttempt = async(req,res) => {
 export const getUserAttempts = async(req,res) => {
     try{
         const attempts = await Attempt.find({user : req.user._id})
-                                    .populate('quiz','title')
+                                    .populate('quiz','title duration')
                                     .sort('-createdAt');
         res.json(attempts);
     }catch(error)
@@ -96,6 +132,16 @@ export const getUserAttempts = async(req,res) => {
         res.status(500).json({message:'Server Error'});
     }
 
+}
+
+export const clearUserAttempts = async(req,res) => {
+    try{
+        await Attempt.deleteMany({user : req.user._id});
+        res.json({message:'Quiz history cleared successfully'});
+    }catch(error)
+    {
+        res.status(500).json({message:'Server Error'});
+    }
 }
 
 

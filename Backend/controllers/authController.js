@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken'
 import { validationResult } from 'express-validator'
-import userSchema from '../models/User.js';
 import User from '../models/User.js';
 
 const generateToken = (id) =>{
@@ -112,4 +111,81 @@ export const login = async(req,res)=>{
     {
         res.status(500).json({message:"Server Error"});
     } 
+}
+
+// Get user profile
+export const getProfile = async(req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({ message: "Server Error" });
+    }
+}
+
+// Update user profile
+export const updateProfile = async(req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const {
+            name,
+            phone,
+            location,
+            university,
+            course,
+            year,
+            gpa,
+            graduationYear,
+            about,
+            skills,
+            interests,
+            profilePicture,
+            socialLinks
+        } = req.body;
+
+        const updateData = {};
+        
+        // Only update fields that are provided
+        if (name !== undefined) updateData.name = name;
+        if (phone !== undefined) updateData.phone = phone;
+        if (location !== undefined) updateData.location = location;
+        if (university !== undefined) updateData.university = university;
+        if (course !== undefined) updateData.course = course;
+        if (year !== undefined) updateData.year = year;
+        if (gpa !== undefined) updateData.gpa = gpa;
+        if (graduationYear !== undefined) updateData.graduationYear = graduationYear;
+        if (about !== undefined) updateData.about = about;
+        if (skills !== undefined) updateData.skills = skills;
+        if (interests !== undefined) updateData.interests = interests;
+        if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+        if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            message: "Profile updated successfully",
+            user
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ message: "Server Error" });
+    }
 }

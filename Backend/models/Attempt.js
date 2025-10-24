@@ -42,6 +42,26 @@ const attemptSchema = new mongoose.Schema({
         required:true,
         default:0
     },
+    totalMarks:{
+        type:Number,
+        required:true,
+        default:0
+    },
+    percentage:{
+        type:Number,
+        required:true,
+        default:0
+    },
+    correctAnswers:{
+        type:Number,
+        required:true,
+        default:0
+    },
+    totalQuestions:{
+        type:Number,
+        required:true,
+        default:0
+    },
     startedAt:{
         type:Date,
         required:true,
