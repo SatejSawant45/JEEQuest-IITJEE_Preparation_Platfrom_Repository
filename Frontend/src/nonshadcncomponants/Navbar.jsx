@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import  useAuthStore  from '../store/authStore.jsx';
 import { GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
+import UserHeader from '@/components/UserHeader';
 
 export default function Navbar()
 {
@@ -18,12 +19,7 @@ export default function Navbar()
                     </Link>
                     
                     <div className="flex items-center space-x-4">
-                        <Button>
-                            log out
-                        </Button>
-                        <Button>
-                            View profile
-                        </Button>
+                        <UserHeader />
                     </div>
 
                 </div>

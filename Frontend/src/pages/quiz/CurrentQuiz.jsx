@@ -28,6 +28,7 @@ export default function CurrentQuiz() {
   const [flaggedQuestions, setFlaggedQuestions] = useState(new Set())
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
   const [error, setError] = useState(null)
+  const [startTime] = useState(Date.now())
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
   useEffect(() => {
@@ -97,9 +98,99 @@ export default function CurrentQuiz() {
     return "unanswered"
   }
 
+  const calculateScore = () => {
+    let correctAnswers = 0
+    let totalMarks = 0
+    let earnedMarks = 0
+
+    quizData.questions.forEach((question, index) => {
+      const marks = question.marks || 1
+      totalMarks += marks
+      
+      if (answers[index] === question.correctAnswer) {
+        correctAnswers++
+        earnedMarks += marks
+      }
+    })
+
+    const percentage = totalMarks > 0 ? (earnedMarks / totalMarks) * 100 : 0
+    
+    return {
+      score: correctAnswers,
+      totalQuestions: quizData.questions.length,
+      earnedMarks,
+      totalMarks,
+      percentage: Math.round(percentage * 10) / 10 // Round to 1 decimal place
+    }
+  }
+
   const handleSubmit = async () => {
+    const endTime = Date.now()
+    const timeTaken = Math.floor((endTime - startTime) / 1000) // in seconds
+    const totalTime = quizData.duration * 60 // convert minutes to seconds
+    
+    const scoreData = calculateScore()
+    
     console.log("Submitted answers:", answers)
-    navigate("/dashboard")
+    console.log("Score data:", scoreData)
+    
+    try {
+      // Submit quiz attempt to backend
+      const token = localStorage.getItem("jwtToken");
+      const response = await fetch(`${primaryBackendUrl}/api/attempt/${id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          answers: answers, // answers object with questionIndex: selectedOption
+          timeTaken: timeTaken
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit quiz attempt');
+      }
+
+      const result = await response.json();
+      console.log('Quiz attempt submitted successfully:', result);
+
+      // Navigate to results page with backend response data
+      navigate("/quiz-results", {
+        state: {
+          quizData,
+          userAnswers: answers,
+          score: result.attempt.correctAnswers,
+          totalQuestions: result.attempt.totalQuestions,
+          earnedMarks: result.attempt.score,
+          totalMarks: result.attempt.totalMarks,
+          percentage: result.attempt.percentage,
+          timeTaken,
+          totalTime,
+          attemptId: result.attempt._id,
+          fromBackend: true // Flag to indicate data is from backend
+        }
+      })
+    } catch (error) {
+      console.error('Error submitting quiz attempt:', error);
+      // Fallback to local calculation if backend fails
+      alert('Failed to save quiz results to server, but showing results locally.');
+      navigate("/quiz-results", {
+        state: {
+          quizData,
+          userAnswers: answers,
+          score: scoreData.score,
+          totalQuestions: scoreData.totalQuestions,
+          earnedMarks: scoreData.earnedMarks,
+          totalMarks: scoreData.totalMarks,
+          percentage: scoreData.percentage,
+          timeTaken,
+          totalTime,
+          fromBackend: false
+        }
+      })
+    }
   }
 
   if (error) {

@@ -32,7 +32,7 @@ export default function UserRegister()
                 if(response.ok)
                 {
                     console.log('Authentication sucessful',responseData);
-                    localStorage.setaItem('jwtToken', response.data.token);
+                    localStorage.setItem('jwtToken', responseData.token);
                     navigate("/user/dashboard");
                 }
                 else

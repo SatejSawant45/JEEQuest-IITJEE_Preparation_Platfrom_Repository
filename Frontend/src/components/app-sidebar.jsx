@@ -1,20 +1,18 @@
 import * as React from "react"
 import {
-  AudioWaveform,
   BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
+  Brain,
+  MessageSquare,
+  PenTool,
+  Trophy,
+  Users,
+  Video,
+  BarChart,
+  User,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavLink, Outlet } from 'react-router-dom'
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
@@ -25,129 +23,73 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// This is sample data.
+// Quiz Website Dashboard Data
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Student",
+    email: "student@quizapp.com",
+    avatar: "/avatars/student.jpg",
   },
   teams: [
     {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
+      name: "QuizMaster",
+      logo: Brain,
+      plan: "Student",
     },
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Learning",
       url: "#",
-      icon: SquareTerminal,
+      icon: BookOpen,
       isActive: true,
       items: [
         {
-          title: "Test Analysis",
+          title: "Take Quizzes",
+          url: "quizzes",
+        },
+        {
+          title: "Performance Analysis",
           url: "analysis",
         },
         {
           title: "Video Lectures",
           url: "lectures",
         },
-        {
-          title: "Blogs",
-          url: "blogs",
-        },
       ],
     },
     {
-      title: "Models",
+      title: "Community",
       url: "#",
-      icon: Bot,
+      icon: Users,
       items: [
         {
-          title: "Mentors",
+          title: "Blog Posts",
+          url: "blogs",
+        },
+        {
+          title: "Find Mentors",
           url: "admins",
         },
         {
-          title: "Inbox",
-          url: "chats",
-        },
-        {
-          title: "ChatBot",
+          title: "AI ChatBot",
           url: "chatbot",
         },
-        {
-          name: "Quizzes",
-          url: "quizzes",
-        },
       ],
     },
     {
-      title: "Documentation",
+      title: "Account",
       url: "#",
-      icon: BookOpen,
+      icon: User,
       items: [
         {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
+          title: "My Profile",
+          url: "profile",
         },
       ],
     },
   ],
-  projects: [
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-
-  ],
+  projects: [],
 }
 
 export function AppSidebar({
@@ -160,7 +102,6 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

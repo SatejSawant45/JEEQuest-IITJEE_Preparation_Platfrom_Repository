@@ -1,8 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Layout from "./nonshadcncomponants/Layout.jsx";
 import UserAuth from "./pages/auth/UserAuth.jsx";
 import AdminAuth from "./pages/auth/AdminAuth.jsx";
+import ModernUserAuth from "./pages/auth/ModernUserAuth.jsx";
+import ModernAdminAuth from "./pages/auth/ModernAdminAuth.jsx";
 import UserDashboard from "./pages/User/DashboardNonShadCNuser.jsx";
 import AdminDashboard from "./pages/Admin/DashboardNonShadCN.jsx";
 import CreateQuiz from "./pages/Admin/CreateQuiz.jsx";
@@ -22,7 +24,9 @@ import VideoLecturesPage from './pages/User/VideoLecturePage.jsx';
 import BloggingPlatform from './pages/User/Blogs.jsx';
 import AdminProfile from './pages/Admin/AdminProfile.jsx';
 import Profile from './pages/User/Profile.jsx';
+import EditProfile from './pages/User/EditProfile.jsx';
 import CurrentQuiz from './pages/quiz/CurrentQuiz.jsx';
+import QuizResults from './pages/quiz/QuizResults.jsx';
 import AdminInbox from './pages/Admin/AdminInbox.jsx';
 import { SocketContext } from './context/socket.js';
 import socket from './context/socket.js';
@@ -36,14 +40,13 @@ function App() {
         <div className='font-main'>
 
             <SocketContext.Provider value={socket}>
-
-                <Routes>
-                    <Route path="/" element={<Layout></Layout>}></Route>
-                    <Route index element={<Home></Home>}></Route>
-                    <Route path="/user/login" element={<UserAuth></UserAuth>}></Route>
-                    <Route path="/user/signup" element={<UserRegister></UserRegister>}></Route>
-                    <Route path="/admin/login" element={<AdminAuth></AdminAuth>}></Route>
-                    <Route path="/admin/signup" element={<AdminRegister></AdminRegister>}></Route>
+                    <Routes>
+                        <Route path="/" element={<Layout></Layout>}></Route>
+                        <Route index element={<Home></Home>}></Route>
+                    <Route path="/user/login" element={<ModernUserAuth></ModernUserAuth>}></Route>
+                    <Route path="/user/signup" element={<ModernUserAuth></ModernUserAuth>}></Route>
+                    <Route path="/admin/login" element={<ModernAdminAuth></ModernAdminAuth>}></Route>
+                    <Route path="/admin/signup" element={<ModernAdminAuth></ModernAdminAuth>}></Route>
                     <Route path="/admin/profile" element={<AdminProfile></AdminProfile>}></Route>
                     <Route path="chat/:adminId" element={<Chats></Chats>}></Route>
                     <Route path="/videocall/:roomId" element={<VideoCall />} />
@@ -56,9 +59,11 @@ function App() {
                         <Route path="lectures" element={<VideoLecturesPage></VideoLecturesPage>}></Route>
                         <Route path="quizzes" element={<QuizPage></QuizPage>}></Route>
                         <Route path="profile" element={<Profile></Profile>}></Route>
+                        <Route path="profile/edit" element={<EditProfile></EditProfile>}></Route>
                     </Route>
 
                     <Route path="/user/takequiz/:id" element={<CurrentQuiz></CurrentQuiz>}></Route>
+                    <Route path="/quiz-results" element={<QuizResults></QuizResults>}></Route>
                     <Route path="admin/dashboard" element={<AdminDashboard></AdminDashboard>}></Route>
                     <Route path="admin/dashboard/chats" element={<AdminInbox></AdminInbox>}></Route>
                     <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>

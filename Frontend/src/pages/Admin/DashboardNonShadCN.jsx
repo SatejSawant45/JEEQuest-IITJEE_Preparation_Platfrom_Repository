@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import QuizCard from "../../nonshadcncomponants/QuizCard.jsx";
 import { Link } from "react-router-dom";
 import Navbar from "../../nonshadcncomponants/Navbar.jsx";
+import UserHeader from "@/components/UserHeader";
 
 const mockQuizzes = [
     {

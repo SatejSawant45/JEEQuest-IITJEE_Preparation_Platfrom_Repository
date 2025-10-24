@@ -6,42 +6,95 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Bar, BarChart, Line, LineChart, XAxis, YAxis, CartesianGrid } from "recharts"
 import { Badge } from "@/components/ui/badge"
 
-const questionPerformanceData = [
-  { question: "Q1", correctRate: 92, difficulty: "Easy" },
-  { question: "Q2", correctRate: 87, difficulty: "Easy" },
-  { question: "Q3", correctRate: 74, difficulty: "Medium" },
-  { question: "Q4", correctRate: 68, difficulty: "Medium" },
-  { question: "Q5", correctRate: 45, difficulty: "Hard" },
-  { question: "Q6", correctRate: 82, difficulty: "Medium" },
-  { question: "Q7", correctRate: 39, difficulty: "Hard" },
-  { question: "Q8", correctRate: 91, difficulty: "Easy" },
-  { question: "Q9", correctRate: 56, difficulty: "Hard" },
-  { question: "Q10", correctRate: 78, difficulty: "Medium" },
-]
+export function PerformanceCharts({ attempts = [] }) {
+  // Process quiz performance data
+  const processQuizPerformance = () => {
+    const quizData = {}
+    
+    attempts.filter(a => a.completedAt && a.quiz).forEach(attempt => {
+      const quizId = attempt.quiz._id || attempt.quiz
+      const quizTitle = attempt.quiz.title || `Quiz ${quizId.slice(-4)}`
+      
+      if (!quizData[quizId]) {
+        quizData[quizId] = {
+          title: quizTitle,
+          scores: [],
+          times: []
+        }
+      }
+      
+      if (attempt.percentage != null) {
+        quizData[quizId].scores.push(attempt.percentage)
+      }
+      
+      if (attempt.startedAt && attempt.completedAt) {
+        const duration = (new Date(attempt.completedAt) - new Date(attempt.startedAt)) / (1000 * 60)
+        quizData[quizId].times.push(duration)
+      }
+    })
+    
+    return Object.entries(quizData).map(([quizId, data]) => ({
+      quiz: data.title,
+      averageScore: data.scores.length > 0 ? Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10 : 0,
+      attempts: data.scores.length,
+      avgTime: data.times.length > 0 ? Math.round((data.times.reduce((sum, time) => sum + time, 0) / data.times.length) * 10) / 10 : 0,
+      difficulty: data.averageScore >= 80 ? "Easy" : data.averageScore >= 60 ? "Medium" : "Hard"
+    })).slice(0, 10) // Show top 10 quizzes
+  }
 
-const timeAnalysisData = [
-  { question: "Q1", avgTime: 45, optimalTime: 60 },
-  { question: "Q2", avgTime: 52, optimalTime: 60 },
-  { question: "Q3", avgTime: 78, optimalTime: 90 },
-  { question: "Q4", avgTime: 95, optimalTime: 90 },
-  { question: "Q5", avgTime: 125, optimalTime: 120 },
-  { question: "Q6", avgTime: 67, optimalTime: 75 },
-  { question: "Q7", avgTime: 142, optimalTime: 120 },
-  { question: "Q8", avgTime: 38, optimalTime: 45 },
-  { question: "Q9", avgTime: 156, optimalTime: 150 },
-  { question: "Q10", avgTime: 89, optimalTime: 90 },
-]
+  const processTimeAnalysis = () => {
+    const completedAttempts = attempts.filter(a => a.completedAt && a.startedAt)
+    
+    return completedAttempts.slice(0, 10).map((attempt, index) => {
+      const duration = (new Date(attempt.completedAt) - new Date(attempt.startedAt)) / (1000 * 60)
+      const quizTitle = attempt.quiz?.title || `Quiz ${index + 1}`
+      
+      return {
+        question: quizTitle.length > 15 ? `${quizTitle.slice(0, 15)}...` : quizTitle,
+        avgTime: Math.round(duration * 10) / 10,
+        optimalTime: Math.round(duration * 1.2 * 10) / 10, // Estimate optimal as 20% more
+        score: attempt.percentage || 0
+      }
+    })
+  }
 
-const performanceTrendData = [
-  { week: "Week 1", averageScore: 72.5, attempts: 89 },
-  { week: "Week 2", averageScore: 75.2, attempts: 94 },
-  { week: "Week 3", averageScore: 78.1, attempts: 102 },
-  { week: "Week 4", averageScore: 76.8, attempts: 87 },
-  { week: "Week 5", averageScore: 79.3, attempts: 95 },
-  { week: "Week 6", averageScore: 81.2, attempts: 108 },
-]
-
-export function PerformanceCharts() {
+  const questionPerformanceData = processQuizPerformance()
+  const timeAnalysisData = processTimeAnalysis()
+  
+  const processPerformanceTrend = () => {
+    const weeklyData = {}
+    const now = new Date()
+    
+    // Group attempts by week (last 6 weeks)
+    attempts.filter(a => a.completedAt && a.percentage != null).forEach(attempt => {
+      const attemptDate = new Date(attempt.completedAt)
+      const weeksDiff = Math.floor((now - attemptDate) / (7 * 24 * 60 * 60 * 1000))
+      
+      if (weeksDiff >= 0 && weeksDiff < 6) {
+        const weekKey = `Week ${6 - weeksDiff}`
+        
+        if (!weeklyData[weekKey]) {
+          weeklyData[weekKey] = { scores: [], count: 0 }
+        }
+        
+        weeklyData[weekKey].scores.push(attempt.percentage)
+        weeklyData[weekKey].count += 1
+      }
+    })
+    
+    return Array.from({ length: 6 }, (_, i) => {
+      const weekKey = `Week ${i + 1}`
+      const data = weeklyData[weekKey] || { scores: [], count: 0 }
+      
+      return {
+        week: weekKey,
+        averageScore: data.scores.length > 0 ? Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10 : 0,
+        attempts: data.count
+      }
+    })
+  }
+  
+  const performanceTrendData = processPerformanceTrend()
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Question Performance */}

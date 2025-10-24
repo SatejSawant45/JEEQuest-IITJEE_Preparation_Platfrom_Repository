@@ -9,6 +9,7 @@ const TakeQuiz = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [timeUp, setTimeUp] = useState(false);
+  const [startTime] = useState(Date.now());
 
   useEffect(() => {
     // TODO: Fetch quiz data from API
@@ -49,10 +50,66 @@ const TakeQuiz = () => {
     });
   };
 
+  const calculateScore = () => {
+    let correctAnswers = 0
+    let totalMarks = 0
+    let earnedMarks = 0
+
+    quiz.questions.forEach((question, index) => {
+      const marks = question.marks || 1
+      totalMarks += marks
+      
+      const userAnswer = answers.find(a => a.questionId === question.id)?.selectedOption
+      if (userAnswer === question.correctAnswer) {
+        correctAnswers++
+        earnedMarks += marks
+      }
+    })
+
+    const percentage = totalMarks > 0 ? (earnedMarks / totalMarks) * 100 : 0
+    
+    return {
+      score: correctAnswers,
+      totalQuestions: quiz.questions.length,
+      earnedMarks,
+      totalMarks,
+      percentage: Math.round(percentage * 10) / 10
+    }
+  }
+
   const handleSubmit = () => {
-    // TODO: Implement API call to submit quiz
+    const endTime = Date.now()
+    const timeTaken = Math.floor((endTime - startTime) / 1000)
+    const totalTime = quiz.duration * 60
+    
+    const scoreData = calculateScore()
+    
+    // Convert answers format to match CurrentQuiz format
+    const formattedAnswers = {}
+    answers.forEach((answer, index) => {
+      const questionIndex = quiz.questions.findIndex(q => q.id === answer.questionId)
+      if (questionIndex !== -1) {
+        formattedAnswers[questionIndex] = answer.selectedOption
+      }
+    })
+    
     console.log('Submitting answers:', answers);
-    navigate('/dashboard');
+    console.log('Score data:', scoreData);
+    
+    // Navigate to results page with score data
+    navigate("/quiz-results", {
+      state: {
+        quizData: quiz,
+        userAnswers: formattedAnswers,
+        score: scoreData.score,
+        totalQuestions: scoreData.totalQuestions,
+        earnedMarks: scoreData.earnedMarks,
+        totalMarks: scoreData.totalMarks,
+        percentage: scoreData.percentage,
+        timeTaken,
+        totalTime
+      }
+    })
   };
 
   const handleTimeUp = () => {

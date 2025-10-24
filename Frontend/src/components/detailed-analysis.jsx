@@ -8,29 +8,125 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { AlertTriangle, CheckCircle, Clock, Users } from "lucide-react"
 
-const categoryPerformanceData = [
-  { category: "Mathematics", averageScore: 82.4, attempts: 234, difficulty: "Medium" },
-  { category: "Science", averageScore: 76.8, attempts: 189, difficulty: "Hard" },
-  { category: "History", averageScore: 88.2, attempts: 156, difficulty: "Easy" },
-  { category: "Literature", averageScore: 71.5, attempts: 203, difficulty: "Hard" },
-  { category: "Geography", averageScore: 79.3, attempts: 178, difficulty: "Medium" },
-]
+export function DetailedAnalysis({ attempts = [] }) {
+  // Process category performance (categorize by quiz titles)
+  const processCategoryPerformance = () => {
+    const categories = {}
+    
+    attempts.filter(a => a.completedAt && a.quiz && a.percentage != null).forEach(attempt => {
+      const quizTitle = attempt.quiz.title || 'Unknown'
+      let category = 'General'
+      
+      // Simple categorization based on quiz title keywords
+      if (quizTitle.toLowerCase().includes('math') || quizTitle.toLowerCase().includes('algebra') || quizTitle.toLowerCase().includes('calculus')) {
+        category = 'Mathematics'
+      } else if (quizTitle.toLowerCase().includes('science') || quizTitle.toLowerCase().includes('physics') || quizTitle.toLowerCase().includes('chemistry')) {
+        category = 'Science'
+      } else if (quizTitle.toLowerCase().includes('history')) {
+        category = 'History'
+      } else if (quizTitle.toLowerCase().includes('literature') || quizTitle.toLowerCase().includes('english')) {
+        category = 'Literature'
+      } else if (quizTitle.toLowerCase().includes('geography')) {
+        category = 'Geography'
+      }
+      
+      if (!categories[category]) {
+        categories[category] = { scores: [], count: 0 }
+      }
+      
+      categories[category].scores.push(attempt.percentage)
+      categories[category].count += 1
+    })
+    
+    return Object.entries(categories).map(([category, data]) => ({
+      category,
+      averageScore: data.scores.length > 0 ? Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10 : 0,
+      attempts: data.count,
+      difficulty: data.averageScore >= 80 ? "Easy" : data.averageScore >= 60 ? "Medium" : "Hard"
+    })).filter(item => item.attempts > 0)
+  }
 
-const retakeAnalysisData = [
-  { attempt: "1st", score: 65.2, count: 1247 },
-  { attempt: "2nd", score: 73.8, count: 456 },
-  { attempt: "3rd", score: 79.1, count: 189 },
-  { attempt: "4th", score: 82.5, count: 67 },
-  { attempt: "5th+", score: 85.2, count: 23 },
-]
+  // Process retake analysis (group by quiz attempts)
+  const processRetakeAnalysis = () => {
+    const quizAttempts = {}
+    
+    attempts.filter(a => a.completedAt && a.quiz && a.percentage != null).forEach(attempt => {
+      const quizId = attempt.quiz._id || attempt.quiz
+      
+      if (!quizAttempts[quizId]) {
+        quizAttempts[quizId] = []
+      }
+      
+      quizAttempts[quizId].push({
+        score: attempt.percentage,
+        date: new Date(attempt.completedAt)
+      })
+    })
+    
+    // Sort attempts by date for each quiz
+    Object.keys(quizAttempts).forEach(quizId => {
+      quizAttempts[quizId].sort((a, b) => a.date - b.date)
+    })
+    
+    const retakeData = { "1st": [], "2nd": [], "3rd": [], "4th": [], "5th+": [] }
+    
+    Object.values(quizAttempts).forEach(attemptList => {
+      attemptList.forEach((attempt, index) => {
+        let attemptKey = `${index + 1}${index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'}`
+        if (index >= 4) attemptKey = "5th+"
+        
+        if (retakeData[attemptKey]) {
+          retakeData[attemptKey].push(attempt.score)
+        }
+      })
+    })
+    
+    return Object.entries(retakeData).map(([attempt, scores]) => ({
+      attempt,
+      score: scores.length > 0 ? Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10 : 0,
+      count: scores.length
+    })).filter(item => item.count > 0)
+  }
 
-const problemQuestions = [
-  { question: "Q7", correctRate: 39, avgTime: 142, category: "Science" },
-  { question: "Q5", correctRate: 45, avgTime: 125, category: "Mathematics" },
-  { question: "Q9", correctRate: 56, avgTime: 156, category: "Literature" },
-]
+  // Find problem areas (low scoring quizzes)
+  const processProblemQuestions = () => {
+    const quizPerformance = {}
+    
+    attempts.filter(a => a.completedAt && a.quiz && a.percentage != null).forEach(attempt => {
+      const quizId = attempt.quiz._id || attempt.quiz
+      const quizTitle = attempt.quiz.title || `Quiz ${quizId.slice(-4)}`
+      
+      if (!quizPerformance[quizId]) {
+        quizPerformance[quizId] = {
+          title: quizTitle,
+          scores: [],
+          times: []
+        }
+      }
+      
+      quizPerformance[quizId].scores.push(attempt.percentage)
+      
+      if (attempt.startedAt && attempt.completedAt) {
+        const duration = (new Date(attempt.completedAt) - new Date(attempt.startedAt)) / (1000 * 60)
+        quizPerformance[quizId].times.push(duration)
+      }
+    })
+    
+    return Object.entries(quizPerformance)
+      .map(([quizId, data]) => ({
+        question: data.title.length > 20 ? `${data.title.slice(0, 20)}...` : data.title,
+        correctRate: Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10,
+        avgTime: data.times.length > 0 ? Math.round((data.times.reduce((sum, time) => sum + time, 0) / data.times.length) * 10) / 10 : 0,
+        category: 'General'
+      }))
+      .filter(item => item.correctRate < 70) // Show only problem areas
+      .sort((a, b) => a.correctRate - b.correctRate) // Sort by lowest score first
+      .slice(0, 5) // Show top 5 problem areas
+  }
 
-export function DetailedAnalysis() {
+  const categoryPerformanceData = processCategoryPerformance()
+  const retakeAnalysisData = processRetakeAnalysis()
+  const problemQuestions = processProblemQuestions()
   return (
     <div className="space-y-6">
       {/* Category Performance */}
