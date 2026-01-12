@@ -1,16 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, Send, MoreVertical, Phone, Video, Paperclip, Smile } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Send, MoreVertical, Phone, Video, Paperclip, Smile, PhoneMissed, PhoneIncoming, PhoneOutgoing } from "lucide-react";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import IncomingCallDialog from "../IncommingVideoCall";
-import socket from "@/context/socket";
+import IncomingCallPopup from "@/components/IncomingCallPopup";
+import { SocketContext } from "@/context/socket";
 
 export default function AdminInbox() {
+  const socket = useContext(SocketContext);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -19,6 +22,9 @@ export default function AdminInbox() {
   const [allUsers, setAllUsers] = useState([]);
   const [userId, setUserId] = useState(null); // ✅ track selected userId
   const [incomingCall, setIncomingCall] = useState(null);
+  const [callHistory, setCallHistory] = useState([]);
+  const [missedCalls, setMissedCalls] = useState([]);
+  const [activeTab, setActiveTab] = useState("messages");
 
   const adminId = localStorage.getItem("id"); // ✅ Admin MongoDB _id
   const navigate = useNavigate();
@@ -26,13 +32,26 @@ export default function AdminInbox() {
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
   useEffect(() => {
-
-
-    if (adminId) {
-      socket.emit("register", { userId: adminId });
-      console.log("✅ Admin registered with socket:", adminId);
+    if (adminId && socket) {
+      console.log("📡 Registering admin with socket...", adminId);
+      console.log("Socket connected:", socket.connected);
+      
+      // Wait for socket to connect if not already connected
+      if (!socket.connected) {
+        socket.on("connect", () => {
+          console.log("✅ Socket connected, registering admin:", adminId);
+          socket.emit("register", { userId: adminId, userRole: "admin" });
+        });
+      } else {
+        console.log("✅ Admin registering with socket:", adminId);
+        socket.emit("register", { userId: adminId, userRole: "admin" });
+      }
     }
-  }, [adminId]);
+
+    // Fetch call history and missed calls
+    fetchCallHistory();
+    fetchMissedCalls();
+  }, [adminId, socket]);
 
   useEffect(() => {
     fetch(`${primaryBackendUrl}/api/admin/conversations`)
@@ -77,14 +96,86 @@ export default function AdminInbox() {
   }, []);
 
   useEffect(() => {
-    socket.on("incoming_call", ({ fromUserId, roomId, userName }) => {
-      setIncomingCall({ fromUserId, roomId, userName });
+    socket.on("incoming_call", ({ studentId, roomId, studentName, callTime }) => {
+      console.log("📞 Incoming call from:", studentName);
+      setIncomingCall({ studentId, roomId, studentName, callTime });
     });
 
     return () => {
       socket.off("incoming_call");
     };
-  }, []);
+  }, [socket]);
+
+  const fetchCallHistory = async () => {
+    try {
+      const token = localStorage.getItem("jwtToken");
+      const response = await fetch(`${primaryBackendUrl}/api/videocalls/admin/history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCallHistory(data.calls);
+      }
+    } catch (error) {
+      console.error("Error fetching call history:", error);
+    }
+  };
+
+  const fetchMissedCalls = async () => {
+    try {
+      const token = localStorage.getItem("jwtToken");
+      const response = await fetch(`${primaryBackendUrl}/api/videocalls/admin/missed`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMissedCalls(data.missedCalls);
+      }
+    } catch (error) {
+      console.error("Error fetching missed calls:", error);
+    }
+  };
+
+  const handleAcceptCall = () => {
+    if (!incomingCall) return;
+
+    console.log("Accepting call from:", incomingCall.studentName);
+    
+    socket.emit("accept_call", {
+      studentId: incomingCall.studentId,
+      adminId: adminId,
+      roomId: incomingCall.roomId,
+    });
+
+    // Navigate to video call
+    navigate(`/admin/videocall/${incomingCall.roomId}`);
+    setIncomingCall(null);
+  };
+
+  const handleRejectCall = () => {
+    if (!incomingCall) return;
+
+    console.log("Rejecting call from:", incomingCall.studentName);
+    
+    socket.emit("reject_call", {
+      studentId: incomingCall.studentId,
+      adminId: adminId,
+      roomId: incomingCall.roomId,
+    });
+
+    setIncomingCall(null);
+    // Refresh call lists
+    fetchCallHistory();
+    fetchMissedCalls();
+  };
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -131,7 +222,15 @@ export default function AdminInbox() {
 
   return (
     <div className="flex h-screen bg-background">
-      <div className="w-80 border-r bg-card">
+      {/* Incoming Call Popup */}
+      <IncomingCallPopup
+        call={incomingCall}
+        onAccept={handleAcceptCall}
+        onReject={handleRejectCall}
+      />
+
+      {/* Sidebar */}
+      <div className="w-80 border-r bg-card flex flex-col">
         <div className="p-4 border-b">
           <h1 className="text-xl font-semibold mb-3">Inbox</h1>
           <div className="relative">
@@ -144,74 +243,175 @@ export default function AdminInbox() {
             />
           </div>
         </div>
-        <ScrollArea className="flex-1">
-          <div className="p-2">
-            {conversations.length > 0 ? (
-              filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.roomId}
-                  className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors ${activeConversation?.roomId === conversation.roomId ? "bg-accent" : ""
-                    }`}
-                  onClick={() => {
-                    setActiveConversation(conversation);
-                    setUserId(conversation.userId); // ✅ important for call
-                  }}
-                >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src="/placeholder.svg" alt={conversation.userName} />
-                    <AvatarFallback>
-                      {conversation.userName.split(" ").map((n) => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium truncate">{conversation.userName}</p>
-                      <span className="text-xs text-muted-foreground">{conversation.lastMessageTime}</span>
+
+        {/* Tabs for Messages, Call History, Missed Calls */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="calls">
+              Calls
+              {callHistory.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{callHistory.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="missed">
+              Missed
+              {missedCalls.length > 0 && (
+                <Badge variant="destructive" className="ml-1">{missedCalls.length}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="messages" className="flex-1 mt-0">
+            <ScrollArea className="h-full">
+              <div className="p-2">
+                {conversations.length > 0 ? (
+                  filteredConversations.map((conversation) => (
+                    <div
+                      key={conversation.roomId}
+                      className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
+                        activeConversation?.roomId === conversation.roomId ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setActiveConversation(conversation);
+                        setUserId(conversation.userId);
+                      }}
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src="/placeholder.svg" alt={conversation.userName} />
+                        <AvatarFallback>
+                          {conversation.userName.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="ml-3 flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium truncate">{conversation.userName}</p>
+                          <span className="text-xs text-muted-foreground">{conversation.lastMessageTime}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</p>
+                      </div>
+                      {conversation.unreadCount > 0 && (
+                        <Badge variant="default" className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                          {conversation.unreadCount}
+                        </Badge>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</p>
-                  </div>
-                  {conversation.unreadCount > 0 && (
-                    <Badge variant="default" className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                      {conversation.unreadCount}
-                    </Badge>
-                  )}
-                </div>
-              ))
-            ) : (
-              filteredUsers.map((user) => {
-                const roomId = `${adminId}_${user._id}`;
-                return (
-                  <div
-                    key={user._id}
-                    className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                    onClick={() => {
-                      const newConversation = {
-                        roomId,
-                        userName: user.name,
-                        userId: user._id,
-                        unreadCount: 0,
-                        lastMessage: "",
-                        lastMessageTime: "",
-                      };
-                      setActiveConversation(newConversation);
-                      setUserId(user._id); // ✅ store user ID for call
-                      setConversations((prev) => [...prev, newConversation]);
-                    }}
-                  >
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src="/placeholder.svg" alt={user.name} />
-                      <AvatarFallback>{user.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">Start a new chat</p>
+                  ))
+                ) : (
+                  filteredUsers.map((user) => {
+                    const roomId = `${adminId}_${user._id}`;
+                    return (
+                      <div
+                        key={user._id}
+                        className="flex items-center p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                        onClick={() => {
+                          const newConversation = {
+                            roomId,
+                            userName: user.name,
+                            userId: user._id,
+                            unreadCount: 0,
+                            lastMessage: "",
+                            lastMessageTime: "",
+                          };
+                          setActiveConversation(newConversation);
+                          setUserId(user._id);
+                          setConversations((prev) => [...prev, newConversation]);
+                        }}
+                      >
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src="/placeholder.svg" alt={user.name} />
+                          <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">Start a new chat</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="calls" className="flex-1 mt-0">
+            <ScrollArea className="h-full">
+              <div className="p-2">
+                {callHistory.length > 0 ? (
+                  callHistory.map((call) => (
+                    <div
+                      key={call._id}
+                      className="flex items-center p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback>
+                          {call.student?.name?.charAt(0) || "S"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium">{call.student?.name || "Unknown"}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <PhoneIncoming className="h-3 w-3" />
+                          <span className="capitalize">{call.status}</span>
+                          <span>•</span>
+                          <span>{new Date(call.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        {call.duration > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Duration: {Math.floor(call.duration / 60)}:{(call.duration % 60).toString().padStart(2, "0")}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <PhoneIncoming className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No call history</p>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </ScrollArea>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="missed" className="flex-1 mt-0">
+            <ScrollArea className="h-full">
+              <div className="p-2">
+                {missedCalls.length > 0 ? (
+                  missedCalls.map((call) => (
+                    <div
+                      key={call._id}
+                      className="flex items-center p-3 rounded-lg hover:bg-accent transition-colors mb-2 border-l-4 border-red-500"
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="bg-red-100 text-red-700">
+                          {call.student?.name?.charAt(0) || "S"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium">{call.student?.name || "Unknown"}</p>
+                        <div className="flex items-center gap-2 text-xs text-red-600">
+                          <PhoneMissed className="h-3 w-3" />
+                          <span>Missed call</span>
+                          <span>•</span>
+                          <span>{new Date(call.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(call.createdAt).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <PhoneMissed className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No missed calls</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <div className="flex-1 flex flex-col">
@@ -282,26 +482,11 @@ export default function AdminInbox() {
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground">
             Select a conversation to start chatting
           </div>
         )}
       </div>
-
-      <IncomingCallDialog
-        isOpen={!!incomingCall}
-        callerName={incomingCall?.userName || ""}
-        callerAvatar={"/placeholder.svg"} // Replace with real avatar if available
-        onAccept={() => {
-          if (incomingCall) {
-            navigate(`/videocall/${incomingCall.roomId}`);
-            setIncomingCall(null);
-          }
-        }}
-        onDecline={() => {
-          setIncomingCall(null); // Just close the dialog for now
-        }}
-      />
     </div>
   );
 }

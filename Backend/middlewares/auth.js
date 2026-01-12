@@ -46,6 +46,7 @@ export const adminAuth = async (req, res, next) => {
         }
 
         req.user = admin;
+        req.admin = admin;
 
         next();
     } catch (error) {

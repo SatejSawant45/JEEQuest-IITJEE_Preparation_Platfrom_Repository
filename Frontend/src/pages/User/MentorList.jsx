@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Search, MessageCircle, Video, Star, MapPin, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,15 @@ import { useNavigate } from "react-router-dom";
 import VideoCall from "./VideoCall";
 import { io } from "socket.io-client";
 import IncomingCallDialog from "../IncommingVideoCall";
-import socket from "@/context/socket";
+import { SocketContext } from "@/context/socket";
 
 export default function AdminsPage() {
+  const socket = useContext(SocketContext);
   const [admins, setAdmins] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [incomingCall, setIncomingCall] = useState(null);
+  const [isCallInitiating, setIsCallInitiating] = useState(false);
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
   const navigate = useNavigate();
 
@@ -37,18 +39,42 @@ export default function AdminsPage() {
 
   useEffect(() => {
     const userId = localStorage.getItem("id");
+    const userName = localStorage.getItem("name") || "Student";
     if (userId) {
-      socket.emit("register", { userId }); // 👈 Register user with socket
+      socket.emit("register", { userId, userRole: "student" });
     }
 
     socket.on("incoming_call", ({ fromAdminId, roomId, adminName }) => {
       console.log("📞 Incoming call from admin:", adminName);
       setIncomingCall({ fromAdminId, roomId, adminName });
     });
+
+    // Listen for call responses
+    socket.on("call_accepted", ({ adminId, roomId: callRoomId }) => {
+      console.log("Call accepted by admin:", adminId);
+      setIsCallInitiating(false);
+      navigate(`/videocall/${callRoomId}`);
+    });
+
+    socket.on("call_rejected", ({ adminId }) => {
+      console.log("Call rejected by admin:", adminId);
+      setIsCallInitiating(false);
+      alert("Admin declined your call");
+    });
+
+    socket.on("call_failed", ({ message }) => {
+      console.log("Call failed:", message);
+      setIsCallInitiating(false);
+      alert(message);
+    });
+
     return () => {
       socket.off("incoming_call");
+      socket.off("call_accepted");
+      socket.off("call_rejected");
+      socket.off("call_failed");
     };
-  }, []);
+  }, [socket, navigate]);
 
   const handleSearch = (value) => {
     setSearchTerm(value);
@@ -69,26 +95,34 @@ export default function AdminsPage() {
   };
 
   const handleVideoCall = (adminId) => {
+    if (isCallInitiating) return;
+
     const userId = localStorage.getItem("id");
-    const userName = localStorage.getItem("name"); // or however you store the user name
+    const userName = localStorage.getItem("name") || "Student";
 
     if (!userId) {
       alert("You must be logged in to start a video call.");
       return;
     }
 
-    const roomId = `${adminId}_${userId}`;
+    setIsCallInitiating(true);
+    const callRoomId = `call_${adminId}_${userId}_${Date.now()}`;
 
-    // 🔴 Emit "call_user" to notify the admin in real-time
-    socket.emit("call_user", {
-      fromUserId: userId,
-      toAdminId: adminId,
-      roomId,
-      userName,
+    console.log("Initiating call to admin:", adminId);
+    socket.emit("initiate_call", {
+      studentId: userId,
+      adminId: adminId,
+      roomId: callRoomId,
+      studentName: userName
     });
 
-    // ✅ Redirect user to video call page
-    navigate(`/videocall/${roomId}`);
+    // Set timeout for no answer (30 seconds)
+    setTimeout(() => {
+      if (isCallInitiating) {
+        setIsCallInitiating(false);
+        alert("Admin did not respond to your call");
+      }
+    }, 30000);
   };
 
 

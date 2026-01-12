@@ -2,6 +2,7 @@ import express from 'express';
 import { body } from 'express-validator';
 import * as authController from '../controllers/authController.js';
 import { auth } from '../middlewares/auth.js';
+import upload from '../middlewares/upload.js';
 
 const router = express.Router();
 
@@ -28,11 +29,13 @@ router.put('/profile', auth, [
     body('about').optional().trim().isLength({ max: 500 }).withMessage('About section cannot exceed 500 characters'),
     body('skills').optional().isArray(),
     body('interests').optional().isArray(),
-    body('profilePicture').optional().trim().isURL().withMessage('Profile picture must be a valid URL'),
+    body('profilePicture').optional().trim(),
     body('socialLinks.linkedin').optional().trim(),
     body('socialLinks.github').optional().trim(),
     body('socialLinks.portfolio').optional().trim()
 ], authController.updateProfile);
 
+// Profile picture upload route
+router.post('/profile/upload-picture', auth, upload.single('profilePicture'), authController.uploadProfilePicture);
 
 export default router;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { io } from "socket.io-client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import socket from "@/context/socket.js"
 
 export default function AdminVideoCall() {
   const { roomId } = useParams()
+  const navigate = useNavigate()
   const [isMuted, setIsMuted] = useState(false)
   const [isCameraOn, setIsCameraOn] = useState(true)
   const [showChat, setShowChat] = useState(false)
@@ -22,10 +23,51 @@ export default function AdminVideoCall() {
   const remoteVideoRef = useRef(null)
   const localStreamRef = useRef(null)
   const peerConnectionRef = useRef(null)
+  const callStartTimeRef = useRef(Date.now())
+
+  const handleEndCall = (skipEmit = false) => {
+    // Clean up media streams
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop())
+    }
+    
+    if (!skipEmit) {
+      // Calculate call duration
+      const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000)
+      
+      // Parse roomId to get studentId and adminId
+      // roomId format: call_adminId_studentId_timestamp
+      const parts = roomId.split('_')
+      const adminId = parts[1]
+      const studentId = parts[2]
+      
+      // Emit end_call event
+      socket.emit('end_call', { roomId, duration, studentId, adminId })
+    }
+    
+    // Navigate to admin inbox
+    navigate('/admin/dashboard/chats')
+  }
 
   useEffect(() => {
     const init = async () => {
       try {
+        console.log("Admin initializing call, roomId:", roomId)
+        console.log("Socket connected:", socket.connected)
+        console.log("Socket ID:", socket.id)
+        
+        // Ensure socket is connected
+        if (!socket.connected) {
+          console.log("Socket not connected, waiting...")
+          await new Promise((resolve) => {
+            socket.on('connect', () => {
+              console.log("Socket connected!")
+              resolve()
+            })
+            if (socket.connected) resolve()
+          })
+        }
+        
         // Get media stream
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
@@ -36,9 +78,20 @@ export default function AdminVideoCall() {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream
         }
+        console.log("Admin: Local stream obtained")
 
-        // Connect to socket and join room
+        // Join room and wait for confirmation
         socket.emit("join_room", roomId)
+        console.log("Admin: Emitted join_room for", roomId)
+        
+        await new Promise((resolve) => {
+          socket.once("room_joined", ({ roomId: joinedRoom, success }) => {
+            console.log("Admin: Room joined confirmation", joinedRoom, success)
+            resolve()
+          })
+        })
+
+        console.log("Admin: Confirmed in room, setting up WebRTC...")
 
         // Setup WebRTC peer connection
         const peer = new RTCPeerConnection({
@@ -52,11 +105,13 @@ export default function AdminVideoCall() {
 
         // Add tracks
         stream.getTracks().forEach((track) => {
+          console.log("Admin: Adding track", track.kind)
           peer.addTrack(track, stream)
         })
 
         // Handle remote track
         peer.ontrack = (event) => {
+          console.log("Admin: Received remote track", event.streams[0])
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = event.streams[0]
           }
@@ -65,24 +120,29 @@ export default function AdminVideoCall() {
         // Send ICE candidates
         peer.onicecandidate = (event) => {
           if (event.candidate) {
+            console.log("Admin: Sending ICE candidate")
             socket.emit("ice_candidate", { roomId, candidate: event.candidate })
           }
         }
 
         // Handle offer/answer
-        socket.on("offer", async ({ offer }) => {
+        socket.on("webrtc_offer", async ({ offer }) => {
+          console.log("Admin: Received offer from student")
           await peer.setRemoteDescription(new RTCSessionDescription(offer))
           const answer = await peer.createAnswer()
           await peer.setLocalDescription(answer)
-          socket.emit("answer", { roomId, answer })
+          console.log("Admin: Sending answer")
+          socket.emit("webrtc_answer", { roomId, answer })
         })
 
-        socket.on("answer", async ({ answer }) => {
+        socket.on("webrtc_answer", async ({ answer }) => {
+          console.log("Admin: Received answer (shouldn't happen - admin sends answer)")
           await peer.setRemoteDescription(new RTCSessionDescription(answer))
         })
 
         socket.on("ice_candidate", async ({ candidate }) => {
           if (candidate) {
+            console.log("Admin: Received ICE candidate")
             try {
               await peer.addIceCandidate(new RTCIceCandidate(candidate))
             } catch (err) {
@@ -91,10 +151,13 @@ export default function AdminVideoCall() {
           }
         })
 
-        // Initiate call (offer)
-        const offer = await peer.createOffer()
-        await peer.setLocalDescription(offer)
-        socket.emit("offer", { roomId, offer })
+        socket.on("call_ended", () => {
+          console.log("Admin: Call ended by other party")
+          handleEndCall(true)
+        })
+
+        // Admin doesn't create offer - waits for student's offer
+        console.log("Admin: Waiting for student's offer...")
       } catch (err) {
         console.error("Error accessing media:", err)
       }
@@ -103,10 +166,17 @@ export default function AdminVideoCall() {
     init()
 
     return () => {
+      socket.off("webrtc_offer")
+      socket.off("webrtc_answer")
+      socket.off("ice_candidate")
+      socket.off("call_ended")
       socket.emit("leave_room", roomId)
       peerConnectionRef.current?.close()
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop())
+      }
     }
-  }, [roomId])
+  }, [roomId, navigate])
 
   const sendMessage = () => {
     if (newMessage.trim() !== "") {
@@ -235,7 +305,7 @@ export default function AdminVideoCall() {
           <Button
             variant="destructive"
             className="h-14 w-14 rounded-full"
-            onClick={() => window.location.href = "/"}
+            onClick={handleEndCall}
           >
             <PhoneOff className="h-6 w-6" />
           </Button>

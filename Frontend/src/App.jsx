@@ -9,6 +9,8 @@ import UserDashboard from "./pages/User/DashboardNonShadCNuser.jsx";
 import AdminDashboard from "./pages/Admin/DashboardNonShadCN.jsx";
 import CreateQuiz from "./pages/Admin/CreateQuiz.jsx";
 import EditQuiz from "./pages/Admin/EditQuiz.jsx";
+import CreateLecture from "./pages/Admin/CreateLecture.jsx";
+import EditLecture from "./pages/Admin/EditLecture.jsx";
 import TakeQuiz from "./pages/quiz/TakeQuiz.jsx";
 import Home from "./pages/Home.jsx";
 import AdminRegisterForm from './nonshadcncomponants/RegisterComponants/AdminRegisterForm.jsx';
@@ -30,8 +32,8 @@ import QuizResults from './pages/quiz/QuizResults.jsx';
 import AdminInbox from './pages/Admin/AdminInbox.jsx';
 import { SocketContext } from './context/socket.js';
 import socket from './context/socket.js';
-import VideoCall from './pages/User/VideoCall.jsx';
-import AdminVideoCall from './pages/Admin/AdminVideoCall.jsx';
+import VideoCall from './pages/User/VideoCallNew.jsx';
+import AdminVideoCall from './pages/Admin/AdminVideoCallNew.jsx';
 import DashboardLayout from './pages/User/DashboardLayout.jsx';
 import HomeDashboard from './pages/User/HomeDashboard.jsx';
 
@@ -68,6 +70,8 @@ function App() {
                     <Route path="admin/dashboard/chats" element={<AdminInbox></AdminInbox>}></Route>
                     <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>
                     <Route path="admin/quiz/:id/edit" element={<EditQuiz></EditQuiz>}></Route>
+                    <Route path="admin/lecture/create" element={<CreateLecture></CreateLecture>}></Route>
+                    <Route path="admin/lecture/:id/edit" element={<EditLecture></EditLecture>}></Route>
                     <Route path="admin/videocall/:roomId" element={<AdminVideoCall></AdminVideoCall>} />
                     <Route path="/quiz/:id" element={<TakeQuiz></TakeQuiz>}></Route>
                 </Routes>

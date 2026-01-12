@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, Video, MoreVertical, Send, Smile, Paperclip } from "lucide-react";
 import { SocketContext } from "@/context/socket";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 export default function ChatPage() {
   const socket = useContext(SocketContext);
+  const navigate = useNavigate();
   const { adminId } = useParams();
   const userId = localStorage.getItem("id"); // ✅ get user id
+  const userName = localStorage.getItem("name") || "Student";
   console.log(userId);
   console.log(adminId);
   const cleanAdminId = adminId.replace(/^:/, "");  // Remove leading colon
@@ -22,6 +24,7 @@ export default function ChatPage() {
   const [admin, setAdmin] = useState({ name: "Loading...", avatar: "/placeholder.svg", isOnline: true });
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isCallInitiating, setIsCallInitiating] = useState(false);
   const bottomRef = useRef(null);
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
   // ✅ Join room and fetch old messages
@@ -76,10 +79,33 @@ export default function ChatPage() {
       setMessages(prev => [...prev, { ...message, isOwn: false }]);
     });
 
+    // Listen for call responses
+    socket.on("call_accepted", ({ adminId, roomId: callRoomId }) => {
+      console.log("Call accepted by admin:", adminId);
+      setIsCallInitiating(false);
+      // Navigate to video call page
+      navigate(`/videocall/${callRoomId}`);
+    });
+
+    socket.on("call_rejected", ({ adminId }) => {
+      console.log("Call rejected by admin:", adminId);
+      setIsCallInitiating(false);
+      alert("Admin declined your call");
+    });
+
+    socket.on("call_failed", ({ message }) => {
+      console.log("Call failed:", message);
+      setIsCallInitiating(false);
+      alert(message);
+    });
+
     return () => {
       socket.off("receive_message");
+      socket.off("call_accepted");
+      socket.off("call_rejected");
+      socket.off("call_failed");
     };
-  }, [socket]);
+  }, [socket, navigate]);
 
   // ✅ Send message
   const handleSendMessage = (e) => {
@@ -101,6 +127,30 @@ export default function ChatPage() {
     setNewMessage("");
   };
 
+  // ✅ Initiate video call
+  const handleVideoCall = () => {
+    if (isCallInitiating) return;
+    
+    setIsCallInitiating(true);
+    const callRoomId = `call_${cleanAdminId}_${userId}_${Date.now()}`;
+    
+    console.log("Initiating call to admin:", cleanAdminId);
+    socket.emit("initiate_call", {
+      studentId: userId,
+      adminId: cleanAdminId,
+      roomId: callRoomId,
+      studentName: userName
+    });
+
+    // Set timeout for no answer (30 seconds)
+    setTimeout(() => {
+      if (isCallInitiating) {
+        setIsCallInitiating(false);
+        alert("Admin did not respond to your call");
+      }
+    }, 30000);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
@@ -116,8 +166,15 @@ export default function ChatPage() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon"><Phone className="h-5 w-5" /></Button>
-          <Button variant="ghost" size="icon"><Video className="h-5 w-5" /></Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleVideoCall}
+            disabled={isCallInitiating}
+            title={isCallInitiating ? "Calling..." : "Start video call"}
+          >
+            <Video className={`h-5 w-5 ${isCallInitiating ? "animate-pulse text-green-600" : ""}`} />
+          </Button>
           <Button variant="ghost" size="icon"><MoreVertical className="h-5 w-5" /></Button>
         </div>
       </div>

@@ -18,18 +18,184 @@ const io = new Server(httpServer, {
 });
 
 const userToSocketMap = {}; 
+const onlineAdmins = new Set(); // Track online admins
 
 app.get('/', (req, res) => {
   console.log("GET /");
   res.send('Messaging server is running...');
 });
 
+app.get('/test', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    connectedSockets: io.sockets.sockets.size,
+    onlineAdmins: Array.from(onlineAdmins)
+  });
+});
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on("register", ({ userId }) => {
+  socket.on("register", ({ userId, userRole }) => {
     userToSocketMap[userId] = socket.id;
-    console.log(`Registered user ${userId} with socket ${socket.id}`);
+    console.log(`Registered ${userRole} ${userId} with socket ${socket.id}`);
+    
+    // Track admin online status
+    if (userRole === 'admin') {
+      onlineAdmins.add(userId);
+      console.log(`Admin ${userId} is now online`);
+      // Broadcast admin online status
+      io.emit("admin_status_changed", { adminId: userId, isOnline: true });
+    }
+  });
+
+  // New event: Initiate video call
+  socket.on("initiate_call", async ({ studentId, adminId, roomId, studentName }) => {
+    const adminSocketId = userToSocketMap[adminId];
+    
+    console.log(`Call initiated: Student ${studentId} calling Admin ${adminId}`);
+    console.log(`Admin ${adminId} online:`, onlineAdmins.has(adminId));
+    console.log(`Admin socket ID:`, adminSocketId);
+    
+    if (adminSocketId && onlineAdmins.has(adminId)) {
+      // Admin is online - send incoming call notification
+      console.log(`Sending incoming_call to admin socket ${adminSocketId}`);
+      io.to(adminSocketId).emit("incoming_call", {
+        studentId,
+        studentName,
+        roomId,
+        callTime: new Date().toISOString()
+      });
+      
+      // Save call as initiated in database
+      try {
+        await fetch(`${process.env.MAIN_SERVER_URI}/api/videocalls/initiate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentId,
+            adminId,
+            roomId,
+            status: "initiated"
+          })
+        });
+      } catch (err) {
+        console.error("Error saving call initiation:", err.message);
+      }
+    } else {
+      // Admin is offline - mark as missed
+      console.log(`Admin ${adminId} is offline - marking call as missed`);
+      const studentSocketId = userToSocketMap[studentId];
+      if (studentSocketId) {
+        io.to(studentSocketId).emit("call_failed", {
+          message: "Admin is currently offline",
+          adminId
+        });
+      }
+      
+      // Save as missed call
+      try {
+        await fetch(`${process.env.MAIN_SERVER_URI}/api/videocalls/missed`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentId,
+            adminId,
+            roomId,
+            status: "missed"
+          })
+        });
+      } catch (err) {
+        console.error("Error saving missed call:", err.message);
+      }
+    }
+  });
+
+  // New event: Accept call
+  socket.on("accept_call", async ({ studentId, adminId, roomId }) => {
+    const studentSocketId = userToSocketMap[studentId];
+    console.log(`Admin ${adminId} accepted call from student ${studentId}`);
+    
+    if (studentSocketId) {
+      io.to(studentSocketId).emit("call_accepted", { adminId, roomId });
+      
+      // Update call status to accepted
+      try {
+        await fetch(`${process.env.MAIN_SERVER_URI}/api/videocalls/update-status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentId,
+            adminId,
+            roomId,
+            status: "accepted",
+            startedAt: new Date()
+          })
+        });
+      } catch (err) {
+        console.error("Error updating call status:", err.message);
+      }
+    }
+  });
+
+  // New event: Reject call
+  socket.on("reject_call", async ({ studentId, adminId, roomId }) => {
+    const studentSocketId = userToSocketMap[studentId];
+    console.log(`Admin ${adminId} rejected call from student ${studentId}`);
+    
+    if (studentSocketId) {
+      io.to(studentSocketId).emit("call_rejected", { adminId });
+      
+      // Update call status to rejected
+      try {
+        await fetch(`${process.env.MAIN_SERVER_URI}/api/videocalls/update-status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentId,
+            adminId,
+            roomId,
+            status: "rejected"
+          })
+        });
+      } catch (err) {
+        console.error("Error updating call status:", err.message);
+      }
+    }
+  });
+
+  // New event: End call
+  socket.on("end_call", async ({ studentId, adminId, roomId, duration }) => {
+    console.log(`Call ended: Student ${studentId} - Admin ${adminId}, Duration: ${duration}s`);
+    
+    // Notify other party
+    const studentSocketId = userToSocketMap[studentId];
+    const adminSocketId = userToSocketMap[adminId];
+    
+    if (studentSocketId) {
+      io.to(studentSocketId).emit("call_ended", { roomId });
+    }
+    if (adminSocketId) {
+      io.to(adminSocketId).emit("call_ended", { roomId });
+    }
+    
+    // Update call status to completed
+    try {
+      await fetch(`${process.env.MAIN_SERVER_URI}/api/videocalls/complete`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId,
+          adminId,
+          roomId,
+          status: "completed",
+          duration,
+          endedAt: new Date()
+        })
+      });
+    } catch (err) {
+      console.error("Error completing call:", err.message);
+    }
   });
 
   socket.on("call_user", ({ fromUserId, toAdminId, roomId, userName }) => {
@@ -45,6 +211,11 @@ io.on('connection', (socket) => {
   socket.on("join_room", (roomId) => {
     socket.join(roomId);
     console.log(`Socket ${socket.id} joined room ${roomId}`);
+    // Get room members for debugging
+    const room = io.sockets.adapter.rooms.get(roomId);
+    console.log(`Room ${roomId} now has ${room ? room.size : 0} members`);
+    // Send confirmation back to client
+    socket.emit("room_joined", { roomId, success: true });
   });
 
   socket.on("send_message", async (data) => {
@@ -92,9 +263,25 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log("User disconnected:", socket.id);
+    
+    // Remove from userToSocketMap and mark admin as offline
+    for (const [userId, socketId] of Object.entries(userToSocketMap)) {
+      if (socketId === socket.id) {
+        delete userToSocketMap[userId];
+        
+        // If it was an admin, mark as offline
+        if (onlineAdmins.has(userId)) {
+          onlineAdmins.delete(userId);
+          console.log(`Admin ${userId} is now offline`);
+          io.emit("admin_status_changed", { adminId: userId, isOnline: false });
+        }
+        break;
+      }
+    }
   });
 });
 
-httpServer.listen(7000, () => {
+httpServer.listen(7000, '0.0.0.0', () => {
   console.log("Messaging server with WebRTC signaling running on port 7000");
+  console.log("Network: http://10.62.214.126:7000");
 });

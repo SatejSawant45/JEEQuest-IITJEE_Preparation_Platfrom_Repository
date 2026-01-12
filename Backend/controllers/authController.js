@@ -188,4 +188,36 @@ export const updateProfile = async(req, res) => {
         console.error('Update profile error:', error);
         res.status(500).json({ message: "Server Error" });
     }
-}
+};
+
+// Upload profile picture
+export const uploadProfilePicture = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const userId = req.user.id;
+        const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+
+        // Update user's profile picture in database
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { profilePicture: profilePictureUrl },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            message: "Profile picture uploaded successfully",
+            profilePicture: profilePictureUrl,
+            user
+        });
+    } catch (error) {
+        console.error('Upload profile picture error:', error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
