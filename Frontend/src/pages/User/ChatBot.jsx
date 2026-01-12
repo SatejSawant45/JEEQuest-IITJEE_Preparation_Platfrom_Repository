@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Send, Bot, User, Loader2 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([])
@@ -39,7 +40,7 @@ export default function ChatPage() {
     abortControllerRef.current = new AbortController()
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -172,7 +173,13 @@ export default function ChatPage() {
                         : "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    {message.role === "user" ? (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    )}
                   </div>
 
                   {message.role === "user" && (
