@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AdminSidebar from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -114,8 +115,9 @@ export default function CreateLecture() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
+      <div className="flex-1 ml-64">
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
@@ -260,6 +262,7 @@ export default function CreateLecture() {
             </Button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

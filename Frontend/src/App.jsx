@@ -6,7 +6,9 @@ import AdminAuth from "./pages/auth/AdminAuth.jsx";
 import ModernUserAuth from "./pages/auth/ModernUserAuth.jsx";
 import ModernAdminAuth from "./pages/auth/ModernAdminAuth.jsx";
 import UserDashboard from "./pages/User/DashboardNonShadCNuser.jsx";
-import AdminDashboard from "./pages/Admin/DashboardNonShadCN.jsx";
+import AdminDashboard from "./pages/Admin/Dashboard.jsx";
+import ManageQuizzes from "./pages/Admin/ManageQuizzes.jsx";
+import ManageLectures from "./pages/Admin/ManageLectures.jsx";
 import CreateQuiz from "./pages/Admin/CreateQuiz.jsx";
 import EditQuiz from "./pages/Admin/EditQuiz.jsx";
 import CreateLecture from "./pages/Admin/CreateLecture.jsx";
@@ -67,6 +69,8 @@ function App() {
                     <Route path="/user/takequiz/:id" element={<CurrentQuiz></CurrentQuiz>}></Route>
                     <Route path="/quiz-results" element={<QuizResults></QuizResults>}></Route>
                     <Route path="admin/dashboard" element={<AdminDashboard></AdminDashboard>}></Route>
+                    <Route path="admin/quizzes" element={<ManageQuizzes></ManageQuizzes>}></Route>
+                    <Route path="admin/lectures" element={<ManageLectures></ManageLectures>}></Route>
                     <Route path="admin/dashboard/chats" element={<AdminInbox></AdminInbox>}></Route>
                     <Route path="admin/quiz/create" element={<CreateQuiz></CreateQuiz>}></Route>
                     <Route path="admin/quiz/:id/edit" element={<EditQuiz></EditQuiz>}></Route>

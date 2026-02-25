@@ -129,44 +129,43 @@ export default function AdminsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Find Your Mentor</h1>
-          <p className="text-lg text-gray-600">
-            Connect with industry experts and accelerate your career growth
-          </p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Search mentors by name, skills, or company..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full"
-            />
+        {/* Header and Search Setup */}
+        <div className="space-y-6 mb-8 mt-2">
+          {/* Header */}
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-gray-900">Find Your Mentor</h1>
+            <p className="text-gray-600">
+              Connect with industry experts and accelerate your career growth
+            </p>
           </div>
-        </div>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            Showing {filteredAdmins.length} mentor{filteredAdmins.length !== 1 ? "s" : ""}
-          </p>
+          {/* Search Bar & Count */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search mentors by name, skills, or company..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full bg-white border border-gray-200 focus-visible:ring-1 focus-visible:ring-gray-900"
+              />
+            </div>
+            <p className="text-sm font-medium text-gray-500 whitespace-nowrap">
+              Showing {filteredAdmins.length} mentor{filteredAdmins.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
 
         {/* Mentors Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAdmins.map((admin) => (
-            <Card key={admin._id} className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="pb-4">
+            <Card key={admin._id} className="bg-white border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col">
+              <CardHeader className="pb-4 border-b border-gray-100">
                 <div className="flex items-start space-x-4">
-                  <Avatar className="h-16 w-16">
+                  <Avatar className="h-14 w-14 border border-gray-100 shadow-sm">
                     <AvatarImage src={admin.avatar || "/placeholder.svg"} alt={admin.name} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-gray-100 text-gray-700 font-semibold">
                       {admin.name
                         .split(" ")
                         .map((n) => n[0])
@@ -175,13 +174,15 @@ export default function AdminsPage() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg text-gray-900 truncate">{admin.name}</h3>
-                    <p className="text-sm text-gray-600 truncate">{admin.title}</p>
-                    <p className="text-sm text-blue-600 font-medium">{admin.company}</p>
+                    <p className="text-sm text-gray-600 truncate mb-1">{admin.title}</p>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-none px-2 py-0 text-xs font-medium">
+                      {admin.company}
+                    </Badge>
                   </div>
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-5 pb-5 flex-1 flex flex-col">
                 {/* Rating and Reviews */}
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center">
@@ -211,12 +212,12 @@ export default function AdminsPage() {
                 {/* Skills */}
                 <div className="flex flex-wrap gap-1">
                   {(admin.skills || []).slice(0, 3).map((skill, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
+                    <Badge key={index} variant="secondary" className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 border-none font-normal">
                       {skill}
                     </Badge>
                   ))}
                   {admin.skills?.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs text-gray-500 font-normal border-gray-200">
                       +{admin.skills.length - 3} more
                     </Badge>
                   )}
@@ -237,10 +238,10 @@ export default function AdminsPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex space-x-2 pt-2">
+                <div className="flex space-x-3 pt-4 mt-auto border-t border-gray-100">
                   <Button
                     onClick={() => handleChatConnect(admin._id)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="flex-1 bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
                     size="sm"
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
@@ -249,7 +250,7 @@ export default function AdminsPage() {
                   <Button
                     onClick={() => handleVideoCall(admin._id)}
                     variant="outline"
-                    className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                    className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
                     size="sm"
                   >
                     <Video className="h-4 w-4 mr-2" />

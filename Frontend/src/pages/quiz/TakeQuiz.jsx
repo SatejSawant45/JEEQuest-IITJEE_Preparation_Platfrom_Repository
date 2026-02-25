@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Countdown from 'react-countdown';
+import MathRenderer from '@/components/MathRenderer';
 
 const TakeQuiz = () => {
   const { id } = useParams();
@@ -60,7 +61,12 @@ const TakeQuiz = () => {
       totalMarks += marks
       
       const userAnswer = answers.find(a => a.questionId === question.id)?.selectedOption
-      if (userAnswer === question.correctAnswer) {
+      
+      // Convert to numbers for proper comparison
+      const userAnswerNum = userAnswer !== undefined ? parseInt(userAnswer) : null
+      const correctAnswerNum = parseInt(question.correctAnswer)
+      
+      if (userAnswerNum !== null && !isNaN(userAnswerNum) && userAnswerNum === correctAnswerNum) {
         correctAnswers++
         earnedMarks += marks
       }
@@ -152,13 +158,25 @@ const TakeQuiz = () => {
             </span>
           </div>
 
-          <p className="text-lg mb-4">{question.text}</p>
+          <div className="mb-4">
+            <MathRenderer text={question.text} className="text-lg" />
+            {question.image && question.image.url && (
+              <img 
+                src={question.image.url} 
+                alt={question.image.alt || 'Question image'} 
+                className="mt-3 max-w-full h-auto rounded-lg border shadow-sm max-h-96 object-contain"
+              />
+            )}
+          </div>
 
           <div className="space-y-3">
-            {question.options.map((option, index) => (
+            {question.options.map((option, index) => {
+              const optionText = typeof option === 'string' ? option : option.text;
+              const optionImage = typeof option === 'object' ? option.image : null;
+              return (
               <label
                 key={index}
-                className="flex items-center p-4 border rounded-md cursor-pointer hover:bg-gray-50"
+                className="flex items-start p-4 border rounded-md cursor-pointer hover:bg-gray-50"
               >
                 <input
                   type="radio"
@@ -166,11 +184,20 @@ const TakeQuiz = () => {
                   value={index}
                   checked={answers.find(a => a.questionId === question.id)?.selectedOption === index}
                   onChange={() => handleAnswer(question.id, index)}
-                  className="mr-3"
+                  className="mr-3 mt-1"
                 />
-                <span>{option}</span>
+                <div className="flex-1">
+                  <MathRenderer text={optionText} />
+                  {optionImage && optionImage.url && (
+                    <img 
+                      src={optionImage.url} 
+                      alt={optionImage.alt || `Option ${index + 1}`} 
+                      className="mt-2 max-w-xs h-auto rounded border max-h-48 object-contain"
+                    />
+                  )}
+                </div>
               </label>
-            ))}
+            )})}
           </div>
         </div>
 

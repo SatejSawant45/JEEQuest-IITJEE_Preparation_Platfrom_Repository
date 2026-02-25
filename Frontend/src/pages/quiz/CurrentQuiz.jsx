@@ -15,6 +15,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import MathRenderer from "@/components/MathRenderer"
 
 
 export default function CurrentQuiz() {
@@ -42,8 +43,13 @@ export default function CurrentQuiz() {
         });
         const data = await res.json()
 
-        console.log(data);
-        console.log(data.quiz);
+        console.log('📥 Fetched quiz data:', data);
+        console.log('📥 Questions:', data.questions);
+        if (data.questions && data.questions.length > 0) {
+          console.log('📥 First question:', data.questions[0]);
+          console.log('📥 First question options:', data.questions[0].options);
+        }
+
         if (!res.ok) throw new Error("Quiz not found")
 
         setQuizData(data)
@@ -107,7 +113,11 @@ export default function CurrentQuiz() {
       const marks = question.marks || 1
       totalMarks += marks
       
-      if (answers[index] === question.correctAnswer) {
+      // Convert to numbers for proper comparison
+      const userAnswerNum = answers[index] !== undefined ? parseInt(answers[index]) : null
+      const correctAnswerNum = parseInt(question.correctAnswer)
+      
+      if (userAnswerNum !== null && !isNaN(userAnswerNum) && userAnswerNum === correctAnswerNum) {
         correctAnswers++
         earnedMarks += marks
       }
@@ -161,6 +171,7 @@ export default function CurrentQuiz() {
         state: {
           quizData,
           userAnswers: answers,
+          backendAnswers: result.attempt.answers, // Backend processed answers with isCorrect info
           score: result.attempt.correctAnswers,
           totalQuestions: result.attempt.totalQuestions,
           earnedMarks: result.attempt.score,
@@ -331,7 +342,18 @@ export default function CurrentQuiz() {
                         </Badge>
                       )}
                     </div>
-                    <CardTitle className="text-xl leading-relaxed">{question.text}</CardTitle>
+                    <CardTitle className="text-xl leading-relaxed">
+                      <MathRenderer text={question.text} />
+                    </CardTitle>
+                    {question.image && question.image.url && (
+                      <div className="mt-4">
+                        <img 
+                          src={question.image.url} 
+                          alt={question.image.alt || 'Question image'} 
+                          className="max-w-full h-auto rounded-lg border shadow-sm max-h-96 object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
@@ -350,15 +372,34 @@ export default function CurrentQuiz() {
                   onValueChange={(val) => handleAnswerSelect(parseInt(val))}
                   className="space-y-3"
                 >
-                  {question.options.map((opt, i) => (
-                    <div key={i} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value={i.toString()} id={`option-${i}`} />
+                  {question.options.map((opt, i) => {
+                    const optionText = typeof opt === 'string' ? opt : opt.text;
+                    const optionImage = typeof opt === 'object' ? opt.image : null;
+                    
+                    // Debug logging
+                    console.log(`Option ${i}:`, opt);
+                    console.log(`  Type: ${typeof opt}`);
+                    console.log(`  Text: ${optionText}`);
+                    console.log(`  Image:`, optionImage);
+                    
+                    return (
+                    <div key={i} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                      <RadioGroupItem value={i.toString()} id={`option-${i}`} className="mt-1" />
                       <Label htmlFor={`option-${i}`} className="flex-1 cursor-pointer text-sm">
-                        <span className="font-medium mr-2">({String.fromCharCode(65 + i)})</span>
-                        {opt}
+                        <div>
+                          <span className="font-medium mr-2">({String.fromCharCode(65 + i)})</span>
+                          <MathRenderer text={optionText} className="inline" />
+                          {optionImage && optionImage.url && (
+                            <img 
+                              src={optionImage.url} 
+                              alt={optionImage.alt || `Option ${i + 1}`} 
+                              className="mt-2 max-w-xs h-auto rounded border max-h-48 object-contain"
+                            />
+                          )}
+                        </div>
                       </Label>
                     </div>
-                  ))}
+                  )})}
                 </RadioGroup>
 
                 <div className="flex justify-between items-center pt-6 border-t">

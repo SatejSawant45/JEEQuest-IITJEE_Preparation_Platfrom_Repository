@@ -1,16 +1,41 @@
 import mongoose from "mongoose";
 
+const imageSchema = new mongoose.Schema({
+  url: {
+    type: String,
+    default: null,
+  },
+  key: {
+    type: String,
+    default: null,
+  },
+  alt: {
+    type: String,
+    default: '',
+  },
+}, { _id: false });
+
+const optionSchema = new mongoose.Schema({
+  text: {
+    type: String,
+    required: true,
+  },
+  image: {
+    type: imageSchema,
+    default: null,
+  },
+}, { _id: false });
+
 const questionSchema = new mongoose.Schema({
   text: {
     type: String,
     required: true,
   },
-  options: [
-    {
-      type: String,
-      required: true,
-    },
-  ],
+  image: {
+    type: imageSchema,
+    default: null,
+  },
+  options: [optionSchema],
   correctAnswer: {
     type: Number, // index of the correct option
     required: true,
@@ -62,7 +87,7 @@ const quizSchema = new mongoose.Schema(
     ],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Admin",
       required: true,
     },
   },

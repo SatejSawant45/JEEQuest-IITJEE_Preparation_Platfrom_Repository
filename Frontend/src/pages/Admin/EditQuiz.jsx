@@ -1,6 +1,7 @@
 import react, { useEffect, useState } from 'react';
 import { useParams , useNavigate } from 'react-router-dom';
 import QuizForm from '../../nonshadcncomponants/QuizForm';
+import AdminSidebar from '@/components/AdminSidebar';
 import { Plus } from 'lucide-react';
 import Navbar from '../../nonshadcncomponants/Navbar';
 
@@ -41,11 +42,13 @@ export default function EditQuiz()
 
     return (
         
-        <div>
-            <Navbar></Navbar>
-            <div className="m-8">
+        <div className="flex min-h-screen bg-gray-50">
+            <AdminSidebar />
+            <div className="flex-1 ml-64">
+            <div className="p-8">
                 <h1 className='text-2xl font-bold mb-6'>Edit Quiz</h1>
                 <QuizForm initialData={quiz} onSubmit={handleSubmit}></QuizForm>
+            </div>
             </div>
         </div>
     )

@@ -20,6 +20,11 @@ export const createQuiz = async (req, res) => {
       questions,
     } = req.body;
 
+    console.log("🔍 Received questions:", JSON.stringify(questions, null, 2));
+    console.log("🔍 First question:", questions[0]);
+    console.log("🔍 First question image:", questions[0]?.image);
+    console.log("🔍 First question answers:", questions[0]?.answers);
+
     // Validate required fields
     if (!title || !subject || !description || !duration || !difficulty || !questions || !Array.isArray(questions)) {
       return res.status(400).json({ message: "Missing required quiz fields." });
@@ -27,7 +32,9 @@ export const createQuiz = async (req, res) => {
 
     // Validate and transform questions
     const processedQuestions = questions.map((q, index) => {
-      const { question: text, type, answers, points } = q;
+      const { question: text, type, answers, points, image } = q;
+
+      console.log(`🔍 Processing question ${index + 1}:`, { text, image, type, points });
 
       if (!text || !type || !points || points < 1) {
         throw new Error(`Invalid question at index ${index + 1}`);
@@ -40,6 +47,7 @@ export const createQuiz = async (req, res) => {
       if (type === "short-answer") {
         return {
           text,
+          image: image || null,
           options: [],
           correctAnswer: 0,
           marks: points,
@@ -53,11 +61,19 @@ export const createQuiz = async (req, res) => {
 
       return {
         text,
-        options: answers.map((a) => a.text),
+        image: image || null,
+        options: answers.map((a) => ({
+          text: a.text,
+          image: a.image || null,
+        })),
         correctAnswer: correctIndex,
         marks: points,
       };
     });
+
+    console.log("🔍 Processed questions:", JSON.stringify(processedQuestions, null, 2));
+    console.log("🔍 First processed question image:", processedQuestions[0]?.image);
+    console.log("🔍 First processed question options:", processedQuestions[0]?.options);
 
     const newQuiz = await Quiz.create({
       title,
@@ -69,6 +85,10 @@ export const createQuiz = async (req, res) => {
       questions: processedQuestions,
       createdBy: req.user._id,
     });
+
+    console.log("✅ Quiz created in MongoDB:", JSON.stringify(newQuiz, null, 2));
+    console.log("✅ Saved question image:", newQuiz.questions[0]?.image);
+    console.log("✅ Saved question options:", newQuiz.questions[0]?.options);
 
     return res.status(201).json(newQuiz);
   } catch (error) {
@@ -107,7 +127,7 @@ export const updateQuiz = async (req, res) => {
 
     // Transform questions
     const processedQuestions = questions.map((q, index) => {
-      const { question: text, type, answers, points } = q;
+      const { question: text, type, answers, points, image } = q;
 
       if (!text || !type || !points || points < 1) {
         throw new Error(`Invalid question at index ${index + 1}`);
@@ -120,6 +140,7 @@ export const updateQuiz = async (req, res) => {
       if (type === "short-answer") {
         return {
           text,
+          image: image || null,
           options: [],
           correctAnswer: 0,
           marks: points,
@@ -133,7 +154,11 @@ export const updateQuiz = async (req, res) => {
 
       return {
         text,
-        options: answers.map((a) => a.text),
+        image: image || null,
+        options: answers.map((a) => ({
+          text: a.text,
+          image: a.image || null,
+        })),
         correctAnswer: correctIndex,
         marks: points,
       };

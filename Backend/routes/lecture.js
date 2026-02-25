@@ -1,7 +1,7 @@
 import express from "express";
 import { body } from "express-validator";
 import * as lectureController from "../controllers/lectureController.js";
-import { adminAuth, auth } from "../middlewares/auth.js";
+import { adminAuth, auth, authOrAdmin } from "../middlewares/auth.js";
 
 const router = express.Router();
 
@@ -23,8 +23,8 @@ router.put("/:id", adminAuth, lectureController.updateLecture);
 router.delete("/:id", adminAuth, lectureController.deleteLecture);
 
 // Public/User routes - Get lectures
-router.get("/", auth, lectureController.getAllLectures);
-router.get("/subjects", auth, lectureController.getSubjects);
-router.get("/:id", auth, lectureController.getLectureById);
+router.get("/", authOrAdmin, lectureController.getAllLectures);
+router.get("/subjects", authOrAdmin, lectureController.getSubjects);
+router.get("/:id", authOrAdmin, lectureController.getLectureById);
 
 export default router;

@@ -13,6 +13,7 @@ import blogRoutes from './routes/blog.js';
 import lectureRoutes from './routes/lecture.js';
 import videoCallRoutes from './routes/videocall.js';
 import chatbotRoutes from './routes/chatbot.js';
+import uploadRoutes from './routes/upload.js';
 
 
 
@@ -55,6 +56,7 @@ app.use('/api/blog',blogRoutes);
 app.use('/api/lectures',lectureRoutes);
 app.use('/api/videocalls',videoCallRoutes);
 app.use('/api/chat',chatbotRoutes);
+app.use('/api/upload',uploadRoutes);
 
 
 app.get('/', (req, res) => {

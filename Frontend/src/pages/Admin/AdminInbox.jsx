@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
+import AdminSidebar from "@/components/AdminSidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -222,6 +223,8 @@ export default function AdminInbox() {
 
   return (
     <div className="flex h-screen bg-background">
+      <AdminSidebar />
+      <div className="flex-1 ml-64 flex">
       {/* Incoming Call Popup */}
       <IncomingCallPopup
         call={incomingCall}
@@ -486,6 +489,7 @@ export default function AdminInbox() {
             Select a conversation to start chatting
           </div>
         )}
+      </div>
       </div>
     </div>
   );

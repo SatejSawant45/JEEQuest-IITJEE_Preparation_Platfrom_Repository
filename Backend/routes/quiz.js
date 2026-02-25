@@ -2,7 +2,7 @@ import express from 'express';
 import { ExpressValidator } from "express-validator";
 import { body } from 'express-validator';
 import * as quizController from "../controllers/quizController.js";
-import { adminAuth , auth } from "../middlewares/auth.js";
+import { adminAuth , auth, authOrAdmin } from "../middlewares/auth.js";
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.post('/',adminAuth,[
 router.put('/:id',adminAuth,quizController.updateQuiz);
 router.delete('/:id',adminAuth,quizController.deleteQuiz);
 
-router.get('/',auth,quizController.getAllAvailableQuizzes);
-router.get('/:id',auth,quizController.getQuiz);
+router.get('/',authOrAdmin,quizController.getAllAvailableQuizzes);
+router.get('/:id',authOrAdmin,quizController.getQuiz);
 
 export default router;

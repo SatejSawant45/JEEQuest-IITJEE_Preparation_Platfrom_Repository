@@ -32,23 +32,39 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    console.log('hello')
+    console.log('🔐 Admin login attempt')
     const errors = validationResult(req);
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
 
     const { email, password } = req.body;
+    console.log('📧 Email:', email)
+    console.log('🔑 Password received (length):', password ? password.length : 0)
 
     const admin = await Admin.findOne({ email });
-    console.log(admin)
-    if (!admin || !bcrypt.compare(admin.password,password))
+    console.log('👤 Admin found:', admin ? admin.name : 'Not found')
+    
+    if (!admin) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    console.log('💾 Stored password hash (first 30 chars):', admin.password.substring(0, 30))
+    console.log('🔐 Comparing:', password, 'with hash...')
+    
+    // ✅ Fix: Add await to bcrypt.compare
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    console.log('✅ Password valid:', isPasswordValid)
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const token = generateToken(admin._id);
+    console.log('🎉 Login successful, token generated')
     res.status(200).json({ id: admin._id, name: admin.name, email: admin.email, token });
 
   } catch (err) {
-    console.log(err)
+    console.log('❌ Login error:', err)
     res.status(500).json({ message: "Server Error" });
   }
 };

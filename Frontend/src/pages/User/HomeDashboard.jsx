@@ -24,7 +24,7 @@ const features = [
     title: "Practice Quizzes",
     description: "Test your knowledge with curated JEE questions across Physics, Chemistry, and Mathematics",
     icon: BookOpen,
-    link: "/quiz",
+    link: "/user/dashboard/quizzes",
     stats: "500+ Questions",
     difficulty: "All Levels",
     time: "15-45min",
@@ -34,27 +34,27 @@ const features = [
     title: "Chat with Mentor",
     description: "Get instant help and guidance from experienced JEE mentors and subject experts",
     icon: MessageCircle,
-    link: "/chat-mentor",
+    link: "/user/dashboard/admins",
     stats: "24/7 Available",
     difficulty: "Interactive",
     time: "Real-time",
     participants: "Active",
   },
   {
-    title: "Video Call Sessions",
-    description: "One-on-one video sessions with top JEE educators for personalized learning",
+    title: "Video Lecture",
+    description: "Access high-quality recorded video lectures from top JEE educators covering all important topics",
     icon: Video,
-    link: "/video-call",
-    stats: "Live Sessions",
+    link: "/user/dashboard/lectures",
+    stats: "Recorded Sessions",
     difficulty: "Personalized",
-    time: "60min",
-    participants: "1-on-1",
+    time: "Flexible",
+    participants: "Self-paced",
   },
   {
     title: "AI Study Assistant",
     description: "Your personal AI tutor for instant doubt clearing and study guidance",
     icon: Bot,
-    link: "/ai-chatbot",
+    link: "/user/dashboard/chatbot",
     stats: "Instant Help",
     difficulty: "Smart",
     time: "24/7",
@@ -64,7 +64,7 @@ const features = [
     title: "Test Analysis",
     description: "Detailed performance analysis with insights and improvement suggestions",
     icon: BarChart3,
-    link: "/test-analysis",
+    link: "/user/dashboard/analysis",
     stats: "Smart Insights",
     difficulty: "Advanced",
     time: "Post-test",
@@ -74,7 +74,7 @@ const features = [
     title: "Study Blogs",
     description: "Expert articles, tips, strategies, and latest updates for JEE preparation",
     icon: FileText,
-    link: "/blog",
+    link: "/user/dashboard/blogs",
     stats: "Weekly Updates",
     difficulty: "Informative",
     time: "5-10min",
@@ -146,7 +146,7 @@ const getDifficultyBadge = (difficulty) => {
     Personalized: "bg-purple-100 text-purple-800",
     Smart: "bg-orange-100 text-orange-800",
     Advanced: "bg-red-100 text-red-800",
-    Informative: "bg-gray-100 text-gray-800",
+    Informative: "bg-yellow-100 text-yellow-800",
   }
   return variants[difficulty] || "bg-gray-100 text-gray-800"
 }
@@ -334,11 +334,11 @@ export default function HomeDashboard() {
               <Button
                 size="lg"
                 className="bg-gray-900 hover:bg-gray-800 text-white"
-                onClick={() => (window.location.href = "/quiz")}
+                onClick={() => (window.location.href = "/user/dashboard/quizzes")}
               >
                 Take Practice Quiz
               </Button>
-              <Button size="lg" variant="outline" onClick={() => (window.location.href = "/chat-mentor")}>
+              <Button size="lg" variant="outline" onClick={() => (window.location.href = "/user/dashboard/admins")}>
                 Chat with Mentor
               </Button>
             </div>

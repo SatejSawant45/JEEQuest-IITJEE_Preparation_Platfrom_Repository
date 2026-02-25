@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { saveQuizAttempt, getPerformanceLevel } from '@/lib/quizHistory'
+import MathRenderer from '@/components/MathRenderer'
 
 export default function QuizResults() {
   const location = useLocation()
@@ -17,6 +18,7 @@ export default function QuizResults() {
   const { 
     quizData, 
     userAnswers, 
+    backendAnswers, // Backend processed answers with isCorrect info
     score, 
     percentage, 
     timeTaken,
@@ -158,9 +160,18 @@ export default function QuizResults() {
               <div className="space-y-4">
                 {quizData.questions.map((question, index) => {
                   const userAnswer = userAnswers[index]
-                  const correctAnswer = question.correctAnswer !== undefined ? question.correctAnswer : question.correct_answer
-                  const isCorrect = userAnswer === correctAnswer
+                  
+                  // Get isCorrect and correctAnswer from backend response
+                  const backendAnswer = backendAnswers && backendAnswers[index]
+                  const isCorrect = backendAnswer ? backendAnswer.isCorrect : false
+                  const correctAnswer = backendAnswer ? backendAnswer.correctAnswer : (question.correctAnswer || null)
                   const wasAnswered = userAnswer !== undefined
+
+                  console.log(`===== Question ${index + 1} =====`)
+                  console.log('User answer:', userAnswer, typeof userAnswer)
+                  console.log('Backend answer data:', backendAnswer)
+                  console.log('isCorrect from backend:', isCorrect)
+                  console.log('Correct answer:', correctAnswer)
 
                   return (
                     <div key={index} className="border rounded-lg p-4">
@@ -193,40 +204,70 @@ export default function QuizResults() {
                       </div>
 
                       <h3 className="font-medium text-gray-800 mb-3">
-                        {question.text}
+                        <MathRenderer text={question.text} />
                       </h3>
+                      {question.image && question.image.url && (
+                        <img 
+                          src={question.image.url} 
+                          alt={question.image.alt || 'Question image'} 
+                          className="mb-3 max-w-md h-auto rounded-lg border shadow-sm max-h-64 object-contain"
+                        />
+                      )}
 
                       <div className="space-y-2">
                         {question.options.map((option, optionIndex) => {
-                          const isUserAnswer = userAnswer === optionIndex
-                          const isCorrectAnswer = correctAnswer === optionIndex
+                          const optionText = typeof option === 'string' ? option : option.text;
+                          const optionImage = typeof option === 'object' ? option.image : null;
+                          const userAnswerNum = Number(userAnswer)
+                          const correctAnswerNum = correctAnswer !== null ? Number(correctAnswer) : null
+                          const isUserAnswer = !isNaN(userAnswerNum) && userAnswerNum === optionIndex
+                          const isCorrectOption = correctAnswerNum !== null && !isNaN(correctAnswerNum) && correctAnswerNum === optionIndex
                           
+                          console.log(`  Option ${optionIndex}: isUserAnswer=${isUserAnswer}, isCorrectOption=${isCorrectOption}, isCorrect=${isCorrect}`)
+                          
+                          // Determine styling based on whether this was user's answer and if it was correct
                           let optionClass = "p-3 rounded border text-sm"
+                          let labels = []
                           
-                          if (isCorrectAnswer) {
-                            optionClass += " bg-green-50 border-green-300 text-green-800"
+                          // If backend says the answer is correct and this is user's answer, show it as correct
+                          if (isUserAnswer && isCorrect) {
+                            // User selected this and backend confirmed it's correct
+                            optionClass += " bg-green-50 border-green-300 text-green-800 font-medium"
+                            labels.push({ text: "Your Answer ✓", color: "green" })
                           } else if (isUserAnswer && !isCorrect) {
+                            // User selected this but backend says it's wrong
                             optionClass += " bg-red-50 border-red-300 text-red-800"
+                            labels.push({ text: "Your Answer ✗", color: "red" })
+                          } else if (isCorrectOption && !isUserAnswer) {
+                            // This is the correct answer but user didn't select it
+                            optionClass += " bg-green-50 border-green-300 text-green-800"
+                            labels.push({ text: "Correct Answer", color: "green" })
                           } else {
                             optionClass += " bg-gray-50 border-gray-200"
                           }
 
                           return (
                             <div key={optionIndex} className={optionClass}>
-                              <div className="flex items-center justify-between">
-                                <span>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
                                   <span className="font-medium mr-2">
                                     ({String.fromCharCode(65 + optionIndex)})
                                   </span>
-                                  {option}
-                                </span>
-                                <div className="flex gap-1">
-                                  {isCorrectAnswer && (
-                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                  <MathRenderer text={optionText} className="inline" />
+                                  {optionImage && optionImage.url && (
+                                    <img 
+                                      src={optionImage.url} 
+                                      alt={optionImage.alt || `Option ${optionIndex + 1}`} 
+                                      className="mt-2 max-w-xs h-auto rounded border max-h-32 object-contain"
+                                    />
                                   )}
-                                  {isUserAnswer && !isCorrectAnswer && (
-                                    <XCircle className="w-4 h-4 text-red-600" />
-                                  )}
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                  {labels.map((label, idx) => (
+                                    <span key={idx} className={`text-xs font-medium ${label.color === 'green' ? 'text-green-700' : 'text-red-700'}`}>
+                                      {label.text}
+                                    </span>
+                                  ))}
                                 </div>
                               </div>
                             </div>

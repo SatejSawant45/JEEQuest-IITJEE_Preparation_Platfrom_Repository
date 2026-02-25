@@ -103,17 +103,21 @@ export default function ModernAdminAuth() {
       })
 
       const responseData = await response.json()
+      console.log('📥 Login response:', responseData)
 
       if (response.ok) {
         const successMessage = isLogin ? 'Welcome back, Admin!' : 'Admin account created successfully!'
         toast.success(successMessage, 'You will be redirected to the admin dashboard.')
         
         // Store admin data
+        console.log('💾 Storing token:', responseData.token)
         localStorage.setItem('jwtToken', responseData.token)
         localStorage.setItem('id', responseData.id)
         localStorage.setItem('name', responseData.name)
         localStorage.setItem('email', responseData.email)
         localStorage.setItem('role', 'admin')
+
+        console.log('✅ Token stored. Checking:', localStorage.getItem('jwtToken'))
 
         // Redirect after short delay
         setTimeout(() => {

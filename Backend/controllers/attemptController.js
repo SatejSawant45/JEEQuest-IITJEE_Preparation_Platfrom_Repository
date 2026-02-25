@@ -64,7 +64,13 @@ export const submitAttempt = async(req,res) => {
             let isCorrect = false;
             let marksObtained = 0;
 
-            if (userAnswer !== undefined && userAnswer === question.correctAnswer) {
+            // Convert both to numbers for comparison to handle type mismatch
+            const userAnswerNum = userAnswer !== undefined ? parseInt(userAnswer) : null;
+            const correctAnswerNum = parseInt(question.correctAnswer);
+
+            console.log(`Question ${index}: User answered ${userAnswerNum} (type: ${typeof userAnswer}), Correct is ${correctAnswerNum} (type: ${typeof question.correctAnswer}), Match: ${userAnswerNum === correctAnswerNum}`);
+
+            if (userAnswerNum !== null && !isNaN(userAnswerNum) && userAnswerNum === correctAnswerNum) {
                 isCorrect = true;
                 marksObtained = questionMarks;
                 earnedMarks += questionMarks;
@@ -74,6 +80,7 @@ export const submitAttempt = async(req,res) => {
             processedAnswers.push({
                 questionId: question._id,
                 selectedOption: userAnswer !== undefined ? userAnswer : -1, // -1 for unanswered
+                correctAnswer: question.correctAnswer, // Include correct answer for results display
                 isCorrect,
                 marksObtained
             });

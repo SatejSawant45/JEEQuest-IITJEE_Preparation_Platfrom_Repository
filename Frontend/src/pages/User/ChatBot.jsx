@@ -15,6 +15,8 @@ export default function ChatPage() {
   const scrollAreaRef = useRef(null)
   const abortControllerRef = useRef(null)
 
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL
+
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
@@ -40,7 +42,7 @@ export default function ChatPage() {
     abortControllerRef.current = new AbortController()
 
     try {
-      const response = await fetch("http://localhost:5000/api/chat", {
+      const response = await fetch(`${primaryBackendUrl}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,56 +138,57 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto max-w-4xl p-4 h-screen flex flex-col">
-        <div className="text-center py-6">
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">AI Assistant</h1>
-          <p className="text-slate-600 dark:text-slate-400">Ask me anything and I'll help you out!</p>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 flex flex-col items-center">
+      <div className="w-full max-w-4xl h-[calc(100vh-3rem)] flex flex-col">
+        <div className="text-center py-6 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Assistant</h1>
+          <p className="text-gray-600">Ask me anything and I'll help you out!</p>
         </div>
 
-        <Card className="flex-1 flex flex-col shadow-xl border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+        <Card className="flex-1 flex flex-col shadow-sm border border-gray-200 bg-white overflow-hidden">
           <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
             <div className="space-y-6">
               {messages.length === 0 && (
-                <div className="text-center py-12">
-                  <Bot className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                  <p className="text-slate-500 dark:text-slate-400">Start a conversation with your AI assistant</p>
+                <div className="text-center py-12 mt-10">
+                  <div className="bg-gray-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-200">
+                    <Bot className="h-8 w-8 text-gray-500" />
+                  </div>
+                  <p className="text-gray-500 font-medium">Start a conversation with your AI assistant</p>
                 </div>
               )}
 
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex gap-3 items-end ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {message.role === "assistant" && (
-                    <Avatar className="h-8 w-8 bg-blue-500">
+                    <Avatar className="h-8 w-8 bg-gray-100 border border-gray-200">
                       <AvatarFallback>
-                        <Bot className="h-4 w-4 text-white" />
+                        <Bot className="h-4 w-4 text-gray-700" />
                       </AvatarFallback>
                     </Avatar>
                   )}
 
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      message.role === "user"
-                        ? "bg-blue-500 text-white"
-                        : "bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
-                    }`}
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
+                        ? "bg-gray-900 text-white"
+                        : "bg-gray-100/80 text-gray-800 border border-gray-100"
+                      }`}
                   >
                     {message.role === "user" ? (
                       <div className="whitespace-pre-wrap">{message.content}</div>
                     ) : (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <div className="prose prose-sm max-w-none text-gray-800">
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     )}
                   </div>
 
                   {message.role === "user" && (
-                    <Avatar className="h-8 w-8 bg-slate-500">
+                    <Avatar className="h-8 w-8 bg-gray-200">
                       <AvatarFallback>
-                        <User className="h-4 w-4 text-white" />
+                        <User className="h-4 w-4 text-gray-700" />
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -193,16 +196,16 @@ export default function ChatPage() {
               ))}
 
               {isStreaming && (
-                <div className="flex gap-3 justify-start">
-                  <Avatar className="h-8 w-8 bg-blue-500">
+                <div className="flex gap-3 justify-start items-end">
+                  <Avatar className="h-8 w-8 bg-gray-100 border border-gray-200">
                     <AvatarFallback>
-                      <Bot className="h-4 w-4 text-white" />
+                      <Bot className="h-4 w-4 text-gray-700" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-slate-100 dark:bg-slate-700 rounded-2xl px-4 py-3">
+                  <div className="bg-gray-100/80 rounded-2xl px-4 py-3 border border-gray-100">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-slate-600 dark:text-slate-400">Thinking...</span>
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                      <span className="text-gray-600 text-sm">Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -210,14 +213,14 @@ export default function ChatPage() {
             </div>
           </ScrollArea>
 
-          <div className="border-t bg-white/50 dark:bg-slate-800/50 p-4">
-            <form onSubmit={handleSubmit} className="flex gap-2">
+          <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+            <form onSubmit={handleSubmit} className="flex gap-3">
               <Input
                 value={input}
                 onChange={handleInputChange}
                 placeholder="Type your message here..."
                 disabled={isLoading}
-                className="flex-1 border-slate-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400"
+                className="flex-1 bg-white border border-gray-200 focus-visible:ring-1 focus-visible:ring-gray-900"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
@@ -227,22 +230,22 @@ export default function ChatPage() {
               />
 
               {isStreaming ? (
-                <Button type="button" onClick={handleStop} variant="outline" size="icon" className="shrink-0">
-                  <div className="h-4 w-4 bg-red-500 rounded-sm" />
+                <Button type="button" onClick={handleStop} variant="outline" size="icon" className="shrink-0 border-gray-200">
+                  <div className="h-3 w-3 bg-red-500 rounded-sm" />
                 </Button>
               ) : (
                 <Button
                   type="submit"
                   disabled={!input.trim() || isLoading}
                   size="icon"
-                  className="shrink-0 bg-blue-500 hover:bg-blue-600"
+                  className="shrink-0 bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               )}
             </form>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
+            <p className="text-xs text-gray-500 mt-3 text-center">
               Press Enter to send your message
             </p>
           </div>

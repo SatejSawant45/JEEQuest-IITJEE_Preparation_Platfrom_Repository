@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, Video, MoreVertical, Send, Smile, Paperclip } from "lucide-react";
 import { SocketContext } from "@/context/socket";
@@ -130,10 +131,10 @@ export default function ChatPage() {
   // ✅ Initiate video call
   const handleVideoCall = () => {
     if (isCallInitiating) return;
-    
+
     setIsCallInitiating(true);
     const callRoomId = `call_${cleanAdminId}_${userId}_${Date.now()}`;
-    
+
     console.log("Initiating call to admin:", cleanAdminId);
     socket.emit("initiate_call", {
       studentId: userId,
@@ -152,65 +153,107 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between bg-white">
-        <div className="flex items-center">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={admin.avatar} alt={admin.name} />
-            <AvatarFallback>{admin.name?.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-          </Avatar>
-          <div className="ml-3">
-            <h2 className="text-lg font-semibold">{admin.name}</h2>
-            <p className="text-sm text-gray-500">{admin.isOnline ? "Online" : "Offline"}</p>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 flex flex-col items-center">
+      <div className="w-full max-w-4xl h-[calc(100vh-3rem)] flex flex-col">
+        {/* Page Title Header */}
+        <div className="text-center py-6 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mentor Chat</h1>
+          <p className="text-gray-600">Connect directly with {admin.name}</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={handleVideoCall}
-            disabled={isCallInitiating}
-            title={isCallInitiating ? "Calling..." : "Start video call"}
-          >
-            <Video className={`h-5 w-5 ${isCallInitiating ? "animate-pulse text-green-600" : ""}`} />
-          </Button>
-          <Button variant="ghost" size="icon"><MoreVertical className="h-5 w-5" /></Button>
-        </div>
-      </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4 overflow-y-auto bg-gray-50">
-        <div className="space-y-4">
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.isOwn ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.isOwn ? "bg-blue-600 text-white" : "bg-gray-200 text-black"}`}>
-                <p className="text-sm">{msg.content}</p>
-                <p className="text-xs mt-1 text-gray-400">{new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+        <Card className="flex-1 flex flex-col shadow-sm border border-gray-200 bg-white overflow-hidden">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
+            <div className="flex items-center">
+              <Avatar className="h-10 w-10 border border-gray-100">
+                <AvatarImage src={admin.avatar} alt={admin.name} />
+                <AvatarFallback className="bg-gray-100 text-gray-700 font-medium">
+                  {admin.name?.split(" ").map(n => n[0]).join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="ml-3">
+                <h2 className="text-lg font-semibold text-gray-900 leading-tight">{admin.name}</h2>
+                <div className="flex items-center mt-0.5">
+                  <span className={`h-2 w-2 rounded-full mr-1.5 ${admin.isOnline ? "bg-green-500" : "bg-gray-300"}`}></span>
+                  <p className="text-xs text-gray-500 font-medium">{admin.isOnline ? "Online" : "Offline"}</p>
+                </div>
               </div>
             </div>
-          ))}
-          <div ref={bottomRef}></div>
-        </div>
-      </ScrollArea>
-
-      {/* Input box */}
-      <div className="p-4 border-t bg-white">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon"><Paperclip className="h-5 w-5" /></Button>
-          <div className="flex-1 relative">
-            <Input
-              placeholder="Type a message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="pr-10"
-            />
-            <Button variant="ghost" size="icon" type="button" className="absolute right-1 top-1/2 transform -translate-y-1/2">
-              <Smile className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleVideoCall}
+                disabled={isCallInitiating}
+                title={isCallInitiating ? "Calling..." : "Start video call"}
+                className="text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <Video className={`h-5 w-5 ${isCallInitiating ? "animate-pulse text-green-600" : ""}`} />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-gray-100">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
-          <Button type="submit" size="icon"><Send className="h-4 w-4" /></Button>
-        </form>
+
+          {/* Messages */}
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-6">
+              {messages.length === 0 && (
+                <div className="text-center py-12 mt-10">
+                  <div className="bg-gray-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-200">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={admin.avatar} alt={admin.name} />
+                      <AvatarFallback className="bg-gray-200 text-gray-600 font-medium">
+                        {admin.name?.split(" ").map(n => n[0]).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <p className="text-gray-500 font-medium">Send a message to start chatting</p>
+                </div>
+              )}
+              {messages.map((msg, idx) => (
+                <div key={idx} className={`flex gap-3 items-end ${msg.isOwn ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.isOwn ? "bg-gray-900 text-white" : "bg-gray-100/80 text-gray-800 border border-gray-100"}`}>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className={`text-[10px] mt-1 text-right ${msg.isOwn ? "text-gray-300" : "text-gray-400"}`}>
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef}></div>
+            </div>
+          </ScrollArea>
+
+          {/* Input box */}
+          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+            <form onSubmit={handleSendMessage} className="flex gap-3 items-center">
+              <Button type="button" variant="ghost" size="icon" className="shrink-0 text-gray-500 hover:text-gray-900 hover:bg-gray-200">
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Type your message here..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="pr-10 bg-white border border-gray-200 focus-visible:ring-1 focus-visible:ring-gray-900 w-full"
+                />
+                <Button variant="ghost" size="icon" type="button" className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hover:bg-transparent">
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!newMessage.trim()}
+                className="shrink-0 bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
+        </Card>
       </div>
     </div>
   );
