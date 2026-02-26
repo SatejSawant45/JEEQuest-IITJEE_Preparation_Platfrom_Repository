@@ -32,7 +32,7 @@ const data = {
   },
   teams: [
     {
-      name: "QuizMaster",
+      name: "JEEQuest",
       logo: Brain,
       plan: "Student",
     },
@@ -45,11 +45,11 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Take Quizzes",
+          title: "Practice Quizzes",
           url: "quizzes",
         },
         {
-          title: "Performance Analysis",
+          title: "Test Analysis",
           url: "analysis",
         },
         {
@@ -64,15 +64,15 @@ const data = {
       icon: Users,
       items: [
         {
-          title: "Blog Posts",
+          title: "Study Blogs",
           url: "blogs",
         },
         {
-          title: "Find Mentors",
+          title: "Chat with Mentor",
           url: "admins",
         },
         {
-          title: "AI ChatBot",
+          title: "AI Study Assistant",
           url: "chatbot",
         },
       ],

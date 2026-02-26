@@ -15,14 +15,30 @@ import {
 } from "@/components/ui/sidebar"
 import { useEffect, useState } from "react"
 
-import { NavLink,Outlet } from "react-router-dom"
+import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { io } from 'socket.io-client'
 import { SocketContext } from "@/context/socket"
 import { useContext } from "react"
 import HomeDashboard from "./HomeDashboard"
 import UserHeader from "@/components/UserHeader"
 
+// Breadcrumb route mapping
+const routeLabels = {
+  '/user/dashboard': 'Overview',
+  '/user/dashboard/chatbot': 'AI Study Assistant',
+  '/user/dashboard/analysis': 'Test Analysis',
+  '/user/dashboard/blogs': 'Study Blogs',
+  '/user/dashboard/admins': 'Chat with Mentor',
+  '/user/dashboard/lectures': 'Video Lectures',
+  '/user/dashboard/quizzes': 'Practice Quizzes',
+  '/user/dashboard/profile': 'My Profile',
+  '/user/dashboard/profile/edit': 'Edit Profile',
+}
+
 export default function DashboardLayout() {
+  const location = useLocation()
+  const currentPath = location.pathname
+  const currentPageLabel = routeLabels[currentPath] || 'Dashboard'
  
     
 
@@ -76,10 +92,16 @@ export default function DashboardLayout() {
                     Student Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Overview</BreadcrumbPage>
-                </BreadcrumbItem>
+                {currentPath !== '/user/dashboard' && (
+                  <>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href={currentPath}>
+                        {currentPageLabel}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                  </>
+                )}
               </BreadcrumbList>
             </Breadcrumb>
           </div>

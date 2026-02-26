@@ -41,7 +41,7 @@ const features = [
     participants: "Active",
   },
   {
-    title: "Video Lecture",
+    title: "Video Lectures",
     description: "Access high-quality recorded video lectures from top JEE educators covering all important topics",
     icon: Video,
     link: "/user/dashboard/lectures",
