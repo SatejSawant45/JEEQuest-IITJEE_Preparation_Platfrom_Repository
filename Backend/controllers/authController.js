@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { validationResult } from 'express-validator'
 import User from '../models/User.js';
+import { uploadToS3, deleteFromS3 } from '../middlewares/s3Upload.js';
 
 const generateToken = (id) =>{
     
@@ -198,26 +199,54 @@ export const uploadProfilePicture = async (req, res) => {
         }
 
         const userId = req.user.id;
-        const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
 
-        // Update user's profile picture in database
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { profilePicture: profilePictureUrl },
-            { new: true, runValidators: true }
-        ).select('-password');
-
+        // Get user to check for existing profile picture
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
+        // Delete old profile picture from S3 if exists
+        if (user.profilePicture) {
+            try {
+                // Extract S3 key from URL if it's an S3 URL
+                const s3UrlPattern = /amazonaws\.com\/(.+)$/;
+                const match = user.profilePicture.match(s3UrlPattern);
+                if (match && match[1]) {
+                    await deleteFromS3(match[1]);
+                    console.log('Old profile picture deleted from S3');
+                }
+            } catch (deleteError) {
+                console.error('Error deleting old profile picture:', deleteError);
+                // Continue with upload even if delete fails
+            }
+        }
+
+        // Upload new profile picture to S3
+        const { url } = await uploadToS3(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            'profile-pictures'
+        );
+
+        // Update user's profile picture in database with S3 URL
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { profilePicture: url },
+            { new: true, runValidators: true }
+        ).select('-password');
+
         res.json({
             message: "Profile picture uploaded successfully",
-            profilePicture: profilePictureUrl,
-            user
+            profilePicture: url,
+            user: updatedUser
         });
     } catch (error) {
         console.error('Upload profile picture error:', error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(500).json({ 
+            message: "Server Error",
+            error: error.message 
+        });
     }
 };

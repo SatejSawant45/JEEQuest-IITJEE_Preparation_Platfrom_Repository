@@ -1,26 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
-// Create uploads directory if it doesn't exist
-const uploadDir = 'uploads/profiles';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        // Create unique filename: userId_timestamp.extension
-        const userId = req.user.id;
-        const timestamp = Date.now();
-        const extension = path.extname(file.originalname);
-        cb(null, `${userId}_${timestamp}${extension}`);
-    }
-});
+// Configure memory storage for S3 upload
+const storage = multer.memoryStorage();
 
 // File filter to allow only images
 const fileFilter = (req, file, cb) => {
@@ -31,7 +12,7 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-// Configure multer
+// Configure multer with memory storage
 const upload = multer({
     storage: storage,
     limits: {

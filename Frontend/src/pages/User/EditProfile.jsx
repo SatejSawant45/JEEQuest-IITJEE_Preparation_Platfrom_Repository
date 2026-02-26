@@ -221,10 +221,19 @@ export default function EditProfile() {
 
       if (response.ok) {
         // Update the form data with the new profile picture URL
+        // S3 URLs are already complete, local URLs need backend URL prefix
+        const profilePictureUrl = data.profilePicture.startsWith('http') 
+          ? data.profilePicture 
+          : `${primaryBackendUrl}${data.profilePicture}`;
+          
         setFormData(prev => ({
           ...prev,
-          profilePicture: `${primaryBackendUrl}${data.profilePicture}`
+          profilePicture: profilePictureUrl
         }))
+        
+        // Update localStorage so navbar shows new profile picture immediately
+        localStorage.setItem('profilePicture', data.profilePicture)
+        
         setSelectedFile(null)
         setPreviewUrl(null)
         setError(null)
@@ -234,6 +243,9 @@ export default function EditProfile() {
         
         // Reload the user profile data to get updated info
         await loadProfile()
+        
+        // Force page reload to update navbar
+        window.location.reload()
       } else {
         throw new Error(data.message || 'Upload failed')
       }
