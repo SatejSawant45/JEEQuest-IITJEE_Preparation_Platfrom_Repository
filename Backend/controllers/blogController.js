@@ -1,5 +1,6 @@
 import Blog from '../models/Blog.js';
 import { validationResult } from 'express-validator';
+import { uploadToS3, deleteFromS3 } from '../middlewares/s3Upload.js';
 
 // Create a new blog post
 export const createBlog = async (req, res) => {
@@ -332,15 +333,26 @@ export const uploadBlogImages = async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const imageUrls = req.files.map(file => `/uploads/blogs/${file.filename}`);
+    // Upload all images to S3
+    const uploadPromises = req.files.map(file => 
+      uploadToS3(file.buffer, file.originalname, file.mimetype, 'blog-images')
+    );
+
+    const uploadedImages = await Promise.all(uploadPromises);
+    
+    // Extract URLs from S3 response
+    const imageUrls = uploadedImages.map(img => img.url);
 
     res.json({
       success: true,
-      message: "Images uploaded successfully",
+      message: "Images uploaded successfully to S3",
       images: imageUrls
     });
   } catch (error) {
     console.error('Upload blog images error:', error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ 
+      message: "Failed to upload images to S3",
+      error: error.message 
+    });
   }
 };

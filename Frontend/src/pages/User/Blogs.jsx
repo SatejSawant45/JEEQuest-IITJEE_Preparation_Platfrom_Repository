@@ -72,6 +72,37 @@ export default function BloggingPlatform() {
     return `${primaryBackendUrl}${profilePicture}`
   }
 
+  // Helper function to fix and return correct image URL
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return ""
+    
+    // Fix malformed URLs that have localhost prepended to S3 URLs
+    if (imageUrl.includes('http://localhost') && imageUrl.includes('https://')) {
+      // Extract the S3 URL part
+      const s3UrlMatch = imageUrl.match(/(https:\/\/[^"'\s]+)/)
+      if (s3UrlMatch) {
+        return s3UrlMatch[1]
+      }
+    }
+    
+    // Fix malformed URLs with any backend URL prepended to S3 URLs
+    if (imageUrl.match(/https?:\/\/[^/]+https?:\/\//)) {
+      // Extract the second URL (the S3 URL)
+      const match = imageUrl.match(/(https?:\/\/[^/]+)(https?:\/\/.+)/)
+      if (match && match[2]) {
+        return match[2]
+      }
+    }
+    
+    // If already absolute URL, return as is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl
+    }
+    
+    // If relative URL, prepend backend URL
+    return `${primaryBackendUrl}${imageUrl}`
+  }
+
   // Load current user profile
   const loadCurrentUser = async () => {
     try {
@@ -211,7 +242,15 @@ export default function BloggingPlatform() {
       const data = await response.json()
 
       if (response.ok) {
-        const fullImageUrls = data.images.map(img => `${primaryBackendUrl}${img}`)
+        // S3 URLs are already absolute, only prepend backend URL for relative paths
+        const fullImageUrls = data.images.map(img => {
+          // Check if URL is already absolute (starts with http:// or https://)
+          if (img.startsWith('http://') || img.startsWith('https://')) {
+            return img
+          }
+          // Otherwise, it's a relative URL, prepend backend URL
+          return `${primaryBackendUrl}${img}`
+        })
         return fullImageUrls
       } else {
         throw new Error(data.message || 'Image upload failed')
@@ -614,13 +653,13 @@ export default function BloggingPlatform() {
                   <div className="space-y-2">
                     {post.images.length === 1 ? (
                       <div className="rounded-lg overflow-hidden">
-                        <img src={post.images[0]} alt="Post image" className="w-full h-64 object-cover" />
+                        <img src={getImageUrl(post.images[0])} alt="Post image" className="w-full h-64 object-cover" />
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
                         {post.images.slice(0, 4).map((image, index) => (
                           <div key={index} className="rounded-lg overflow-hidden relative">
-                            <img src={image} alt={`Post image ${index + 1}`} className="w-full h-32 object-cover" />
+                            <img src={getImageUrl(image)} alt={`Post image ${index + 1}`} className="w-full h-32 object-cover" />
                             {index === 3 && post.images.length > 4 && (
                               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                                 <span className="text-white font-semibold">+{post.images.length - 4} more</span>
