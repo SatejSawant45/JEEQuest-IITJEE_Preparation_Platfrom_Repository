@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Countdown from 'react-countdown';
 import MathRenderer from '@/components/MathRenderer';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const TakeQuiz = () => {
   const { id } = useParams();
@@ -11,6 +20,48 @@ const TakeQuiz = () => {
   const [answers, setAnswers] = useState([]);
   const [timeUp, setTimeUp] = useState(false);
   const [startTime] = useState(Date.now());
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [isBackButtonWarningOpen, setIsBackButtonWarningOpen] = useState(false);
+  const hasInitializedHistoryRef = useRef(false)
+
+  // Prevent browser back button and page refresh
+  useEffect(() => {
+    let hasShownWarning = false
+
+    // Prevent back navigation
+    const preventBackNavigation = (e) => {
+      if (!quizSubmitted && !hasShownWarning) {
+        hasShownWarning = true
+        window.history.pushState(null, '', window.location.href)
+        setIsBackButtonWarningOpen(true)
+        setTimeout(() => { hasShownWarning = false }, 500)
+      }
+    }
+
+    // Warn before page close/refresh
+    const handleBeforeUnload = (e) => {
+      if (!quizSubmitted) {
+        e.preventDefault()
+        e.returnValue = 'You are currently taking a quiz. Are you sure you want to leave? Your progress may be lost.'
+        return e.returnValue
+      }
+    }
+
+    // Push initial state ONCE using ref
+    if (!hasInitializedHistoryRef.current) {
+      window.history.pushState(null, '', window.location.href)
+      hasInitializedHistoryRef.current = true
+    }
+    
+    // Add event listeners
+    window.addEventListener('popstate', preventBackNavigation)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('popstate', preventBackNavigation)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [quizSubmitted])
 
   useEffect(() => {
     // TODO: Fetch quiz data from API
@@ -84,6 +135,7 @@ const TakeQuiz = () => {
   }
 
   const handleSubmit = () => {
+    setQuizSubmitted(true) // Allow navigation after submit
     const endTime = Date.now()
     const timeTaken = Math.floor((endTime - startTime) / 1000)
     const totalTime = quiz.duration * 60
@@ -104,6 +156,7 @@ const TakeQuiz = () => {
     
     // Navigate to results page with score data
     navigate("/quiz-results", {
+      replace: true,
       state: {
         quizData: quiz,
         userAnswers: formattedAnswers,
@@ -228,6 +281,24 @@ const TakeQuiz = () => {
         </div>
       </div>
     </div>
+
+    {/* Back Button Warning Dialog */}
+    <Dialog open={isBackButtonWarningOpen} onOpenChange={setIsBackButtonWarningOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cannot Leave Quiz</DialogTitle>
+          <DialogDescription>
+            You are currently taking a quiz. Please submit your quiz first before leaving this page.
+            <br />
+            <br />
+            Use the "Submit Quiz" button at the bottom to complete your quiz.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => setIsBackButtonWarningOpen(false)}>Continue Quiz</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 };

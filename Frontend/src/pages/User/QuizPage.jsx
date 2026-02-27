@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const getDifficultyColor = (difficulty) => {
   switch (difficulty) {
@@ -26,6 +36,8 @@ export default function QuizPage() {
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels");
   const [quizzes, setQuizzes] = useState([]); // 🔁 dynamic quizzes
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
   const navigate = useNavigate();
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
 
@@ -80,6 +92,19 @@ export default function QuizPage() {
     });
     return grouped;
   }, [filteredQuizzes]);
+
+  const handleStartQuiz = (quiz) => {
+    setSelectedQuiz(quiz);
+    setIsDialogOpen(true);
+  };
+
+  const handleConfirmStart = () => {
+    if (selectedQuiz) {
+      navigate(`/user/takequiz/${selectedQuiz._id}`);
+    }
+    setIsDialogOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -206,7 +231,7 @@ export default function QuizPage() {
                           )}
                         </div>
 
-                        <Button className="w-full" onClick={() => navigate(`/user/takequiz/${quiz._id}`)}>
+                        <Button className="w-full" onClick={() => handleStartQuiz(quiz)}>
                           Start Quiz
                         </Button>
                       </CardContent>
@@ -218,6 +243,34 @@ export default function QuizPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Start Quiz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedQuiz && (
+                <>
+                  You are about to start <strong>{selectedQuiz.title}</strong>.
+                  <br />
+                  <br />
+                  This quiz has <strong>{selectedQuiz.questions.length} questions</strong> and should take approximately <strong>{selectedQuiz.duration} minutes</strong> to complete.
+                  <br />
+                  <br />
+                  Are you sure you want to begin?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmStart}>
+              Yes, Start Quiz
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

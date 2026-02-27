@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, Clock, TrendingUp, Home, RotateCcw } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, TrendingUp, Home } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,19 +26,37 @@ export default function QuizResults() {
     fromBackend 
   } = location.state || {}
 
-  // Redirect if no data is available
-  if (!quizData || !userAnswers) {
-    navigate('/dashboard')
-    return null
-  }
-
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}m ${secs}s`
   }
 
-  const scoreLevel = getPerformanceLevel(percentage)
+  const scoreLevel = percentage !== undefined ? getPerformanceLevel(percentage) : { level: 'N/A', color: '', bgColor: '' }
+
+  // Redirect if no data is available - must be in useEffect to avoid hooks violation
+  useEffect(() => {
+    if (!quizData || !userAnswers) {
+      navigate('/user/dashboard', { replace: true })
+    }
+  }, [quizData, userAnswers, navigate])
+
+  // Prevent browser back button navigation from results page
+  useEffect(() => {
+    // Push a new state to prevent going back to quiz attempt
+    window.history.pushState(null, '', window.location.href)
+    
+    const preventBackNavigation = (e) => {
+      // When user tries to go back, push the current state again
+      window.history.pushState(null, '', window.location.href)
+    }
+    
+    window.addEventListener('popstate', preventBackNavigation)
+    
+    return () => {
+      window.removeEventListener('popstate', preventBackNavigation)
+    }
+  }, [])
 
   // Save quiz attempt to history when component mounts (only for fallback cases)
   useEffect(() => {
@@ -65,6 +83,11 @@ export default function QuizResults() {
       console.log('Quiz attempt already saved to backend database');
     }
   }, [quizData, score, percentage, timeTaken, totalTime, scoreLevel.level, fromBackend])
+
+  // Show nothing while redirecting if no data
+  if (!quizData || !userAnswers) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -127,21 +150,13 @@ export default function QuizResults() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <Button 
                 onClick={() => navigate('/user/dashboard')}
                 className="flex items-center gap-2"
               >
                 <Home className="w-4 h-4" />
                 Back to Dashboard
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/quiz/${quizData.id}`)}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Retake Quiz
               </Button>
             </div>
           </CardContent>

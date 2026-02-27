@@ -74,6 +74,9 @@ export default function ChatPage() {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
+      
+      // Buffer for incomplete lines across chunks
+      let buffer = ""
 
       let done = false
       while (!done) {
@@ -82,28 +85,61 @@ export default function ChatPage() {
 
         if (value) {
           const chunk = decoder.decode(value, { stream: true })
-          const lines = chunk.split("\n")
+          // Prepend any buffered incomplete line from previous chunk
+          const text = buffer + chunk
+          const lines = text.split("\n")
+          
+          // Keep the last line in buffer if it doesn't end with newline
+          // (it might be incomplete)
+          if (!chunk.endsWith("\n")) {
+            buffer = lines.pop() || ""
+          } else {
+            buffer = ""
+          }
 
           for (const line of lines) {
-            if (line.startsWith("0:")) {
+            if (line.trim() && line.startsWith("0:")) {
               try {
                 const jsonStr = line.slice(2)
                 const data = JSON.parse(jsonStr)
-                if (data.type === "text-delta" && data.textDelta) {
+                // Backend now sends full text, not deltas
+                if (data.type === "text-full" && data.text) {
+                  // Replace the entire content with the full accumulated text from backend
                   setMessages((prev) => {
                     const updated = [...prev]
                     const lastMessage = updated[updated.length - 1]
                     if (lastMessage && lastMessage.role === "assistant") {
-                      lastMessage.content += data.textDelta
+                      lastMessage.content = data.text
                     }
                     return updated
                   })
                 }
               } catch (e) {
                 // Ignore parsing errors for malformed chunks
+                console.error("Parse error:", e, "Line:", line)
               }
             }
           }
+        }
+      }
+      
+      // Process any remaining buffered content
+      if (buffer.trim() && buffer.startsWith("0:")) {
+        try {
+          const jsonStr = buffer.slice(2)
+          const data = JSON.parse(jsonStr)
+          if (data.type === "text-full" && data.text) {
+            setMessages((prev) => {
+              const updated = [...prev]
+              const lastMessage = updated[updated.length - 1]
+              if (lastMessage && lastMessage.role === "assistant") {
+                lastMessage.content = data.text
+              }
+              return updated
+            })
+          }
+        } catch (e) {
+          console.error("Parse error (final buffer):", e)
         }
       }
     } catch (error) {

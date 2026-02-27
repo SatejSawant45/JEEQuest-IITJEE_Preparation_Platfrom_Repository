@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
   BookOpen, Timer, Send, ChevronLeft, ChevronRight, Flag, CheckCircle
@@ -28,9 +28,51 @@ export default function CurrentQuiz() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [flaggedQuestions, setFlaggedQuestions] = useState(new Set())
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
+  const [isBackButtonWarningOpen, setIsBackButtonWarningOpen] = useState(false)
   const [error, setError] = useState(null)
   const [startTime] = useState(Date.now())
+  const [quizSubmitted, setQuizSubmitted] = useState(false)
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
+  const hasInitializedHistoryRef = useRef(false)
+
+  // Prevent browser back button and page refresh
+  useEffect(() => {
+    let hasShownWarning = false
+
+    // Prevent back navigation
+    const preventBackNavigation = (e) => {
+      if (!quizSubmitted && !hasShownWarning) {
+        hasShownWarning = true
+        window.history.pushState(null, '', window.location.href)
+        setIsBackButtonWarningOpen(true)
+        setTimeout(() => { hasShownWarning = false }, 500)
+      }
+    }
+
+    // Warn before page close/refresh
+    const handleBeforeUnload = (e) => {
+      if (!quizSubmitted) {
+        e.preventDefault()
+        e.returnValue = 'You are currently taking a quiz. Are you sure you want to leave? Your progress may be lost.'
+        return e.returnValue
+      }
+    }
+
+    // Push initial state ONCE using ref
+    if (!hasInitializedHistoryRef.current) {
+      window.history.pushState(null, '', window.location.href)
+      hasInitializedHistoryRef.current = true
+    }
+    
+    // Add event listeners
+    window.addEventListener('popstate', preventBackNavigation)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('popstate', preventBackNavigation)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [quizSubmitted])
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -135,6 +177,7 @@ export default function CurrentQuiz() {
   }
 
   const handleSubmit = async () => {
+    setQuizSubmitted(true) // Allow navigation after submit
     const endTime = Date.now()
     const timeTaken = Math.floor((endTime - startTime) / 1000) // in seconds
     const totalTime = quizData.duration * 60 // convert minutes to seconds
@@ -168,6 +211,7 @@ export default function CurrentQuiz() {
 
       // Navigate to results page with backend response data
       navigate("/quiz-results", {
+        replace: true,
         state: {
           quizData,
           userAnswers: answers,
@@ -188,6 +232,7 @@ export default function CurrentQuiz() {
       // Fallback to local calculation if backend fails
       alert('Failed to save quiz results to server, but showing results locally.');
       navigate("/quiz-results", {
+        replace: true,
         state: {
           quizData,
           userAnswers: answers,
@@ -272,6 +317,24 @@ export default function CurrentQuiz() {
             </div>
           </CardHeader>
         </Card>
+
+        {/* Back Button Warning Dialog */}
+        <Dialog open={isBackButtonWarningOpen} onOpenChange={setIsBackButtonWarningOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cannot Leave Quiz</DialogTitle>
+              <DialogDescription>
+                You are currently taking a quiz. Please submit your quiz first before leaving this page.
+                <br />
+                <br />
+                Use the "Submit Quiz" button in the header to complete your quiz.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setIsBackButtonWarningOpen(false)}>Continue Quiz</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

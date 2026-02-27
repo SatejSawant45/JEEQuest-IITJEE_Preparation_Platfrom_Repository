@@ -48,9 +48,12 @@ export const chatController = async (req, res) => {
     const result = await chat.sendMessageStream(latestMessage);
 
     for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      // Send in the format expected by the frontend
-      res.write(`0:${JSON.stringify({ type: "text-delta", textDelta: chunkText })}\n`);
+      const fullText = chunk.text();
+      
+      if (fullText) {
+        // Send the full accumulated text (frontend will replace, not append)
+        res.write(`0:${JSON.stringify({ type: "text-full", text: fullText })}\n`);
+      }
     }
 
     res.end();

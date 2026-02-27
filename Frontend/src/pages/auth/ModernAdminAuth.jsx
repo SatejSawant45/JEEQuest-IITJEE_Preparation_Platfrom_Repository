@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, Shield, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,16 @@ export default function ModernAdminAuth() {
   const [success, setSuccess] = useState('')
 
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL
+
+  // Redirect if admin is already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('jwtToken')
+    const role = localStorage.getItem('role')
+    
+    if (token && role === 'admin') {
+      navigate('/admin/dashboard', { replace: true })
+    }
+  }, [navigate])
 
   const handleInputChange = (e) => {
     setFormData({
