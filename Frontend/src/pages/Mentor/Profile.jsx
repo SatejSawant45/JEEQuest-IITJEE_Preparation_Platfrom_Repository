@@ -43,6 +43,8 @@ export default function MentorProfile() {
         if (response.ok) {
           const data = await response.json()
           setProfile(data)
+          localStorage.setItem('avatar', data.avatar || '')
+          localStorage.setItem('profilePicture', data.avatar || '')
           setFormData({
             name: data.name || '',
             title: data.title || '',
@@ -92,6 +94,8 @@ export default function MentorProfile() {
       setProfile(data.mentor)
       localStorage.setItem('name', data.mentor.name || '')
       localStorage.setItem('email', data.mentor.email || '')
+      localStorage.setItem('avatar', data.mentor.avatar || '')
+      localStorage.setItem('profilePicture', data.mentor.avatar || '')
       alert('Profile updated successfully')
     } catch (error) {
       console.error('Failed to update mentor profile:', error)

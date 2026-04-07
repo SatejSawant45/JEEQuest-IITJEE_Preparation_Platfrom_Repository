@@ -22,7 +22,6 @@ import {
   Video,
   Send,
   Search,
-  Bell,
   User,
   MoreHorizontal,
   ThumbsUp,
@@ -675,19 +674,7 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
                   </DialogContent>
                 </Dialog>
               )}
-              {!embeddedInStaffLayout && (
-                <>
-                  <Button variant="ghost" size="icon">
-                    <Bell className="w-5 h-5" />
-                  </Button>
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={getProfilePictureUrl(currentUser?.profilePicture)} />
-                    <AvatarFallback>
-                      {currentUser?.name ? currentUser.name[0].toUpperCase() : <User className="w-4 h-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                </>
-              )}
+
             </div>
           </div>
         </div>

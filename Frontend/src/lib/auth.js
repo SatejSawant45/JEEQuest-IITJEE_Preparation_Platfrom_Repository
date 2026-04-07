@@ -32,7 +32,7 @@ export const getUserData = () => {
     name: localStorage.getItem('name'),
     email: localStorage.getItem('email'),
     role: localStorage.getItem('role'),
-    profilePicture: localStorage.getItem('profilePicture'),
+    profilePicture: localStorage.getItem('profilePicture') || localStorage.getItem('avatar'),
     token: localStorage.getItem('jwtToken')
   };
 };

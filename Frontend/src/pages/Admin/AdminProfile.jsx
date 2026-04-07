@@ -43,6 +43,8 @@ export default function AdminProfile() {
         if (response.ok) {
           const data = await response.json()
           setProfile(data)
+          localStorage.setItem('avatar', data.avatar || '')
+          localStorage.setItem('profilePicture', data.avatar || '')
           setFormData({
             name: data.name || '',
             title: data.title || '',
@@ -92,6 +94,8 @@ export default function AdminProfile() {
       setProfile(data.admin)
       localStorage.setItem('name', data.admin.name || '')
       localStorage.setItem('email', data.admin.email || '')
+      localStorage.setItem('avatar', data.admin.avatar || '')
+      localStorage.setItem('profilePicture', data.admin.avatar || '')
       alert('Profile updated successfully')
     } catch (error) {
       console.error('Failed to update admin profile:', error)

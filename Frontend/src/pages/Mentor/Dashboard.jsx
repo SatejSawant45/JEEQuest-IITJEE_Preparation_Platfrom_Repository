@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom'
 import { MessageSquare, Video, FileText } from 'lucide-react'
 import MentorSidebar from '@/components/MentorSidebar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function MentorDashboard() {
+  const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL
+  const profilePicture = localStorage.getItem('profilePicture') || localStorage.getItem('avatar')
+  const resolvedProfilePicture =
+    profilePicture && !profilePicture.startsWith('http')
+      ? `${primaryBackendUrl}${profilePicture}`
+      : profilePicture
+  const userName = localStorage.getItem('name') || 'Mentor'
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <MentorSidebar />
@@ -19,10 +28,15 @@ export default function MentorDashboard() {
               </div>
               <Link
                 to="/mentor/profile"
-                className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold hover:bg-emerald-700 transition-colors"
+                className="hover:opacity-90 transition-opacity"
                 title="Open profile"
               >
-                {(localStorage.getItem('name') || 'M').charAt(0).toUpperCase()}
+                <Avatar className="w-10 h-10 border border-emerald-200">
+                  <AvatarImage src={resolvedProfilePicture || '/placeholder.svg'} alt={userName} />
+                  <AvatarFallback className="bg-emerald-600 text-white font-bold">
+                    {userName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
               </Link>
             </div>
           </div>

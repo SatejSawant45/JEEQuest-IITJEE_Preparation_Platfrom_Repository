@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LogOut, User, Settings, Shield } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -29,8 +29,54 @@ export default function UserHeader() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
-  const userData = getUserData()
+  const [userData, setUserData] = useState(getUserData())
+  const [profilePicture, setProfilePicture] = useState(getUserData().profilePicture || '')
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadProfilePicture = async () => {
+      const token = localStorage.getItem('jwtToken')
+      const role = localStorage.getItem('role')
+
+      if (!token || role !== 'user') {
+        return
+      }
+
+      try {
+        const response = await fetch(`${primaryBackendUrl}/api/auth/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          return
+        }
+
+        const profile = await response.json()
+        const latestProfilePicture = profile.profilePicture || ''
+
+        localStorage.setItem('name', profile.name || '')
+        localStorage.setItem('email', profile.email || '')
+        localStorage.setItem('profilePicture', latestProfilePicture)
+
+        if (isMounted) {
+          setUserData(getUserData())
+          setProfilePicture(latestProfilePicture)
+        }
+      } catch (error) {
+        console.error('Failed to load profile for header:', error)
+      }
+    }
+
+    loadProfilePicture()
+
+    return () => {
+      isMounted = false
+    }
+  }, [primaryBackendUrl])
 
   const handleLogout = () => {
     toast.info('Goodbye!', 'You have been logged out successfully.')
@@ -52,10 +98,22 @@ export default function UserHeader() {
   }
 
   const getProfileImageUrl = () => {
-    if (userData.profilePicture && !userData.profilePicture.startsWith('http')) {
-      return `${primaryBackendUrl}${userData.profilePicture}`
+    const imageValue = profilePicture || userData.profilePicture || ''
+
+    if (!imageValue) {
+      return ''
     }
-    return userData.profilePicture
+
+    if (
+      imageValue.startsWith('http://') ||
+      imageValue.startsWith('https://') ||
+      imageValue.startsWith('data:') ||
+      imageValue.startsWith('blob:')
+    ) {
+      return imageValue
+    }
+
+    return `${primaryBackendUrl}${imageValue.startsWith('/') ? imageValue : `/${imageValue}`}`
   }
 
   return (

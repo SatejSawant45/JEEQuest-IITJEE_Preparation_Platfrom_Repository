@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import AdminSidebar from '@/components/AdminSidebar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
   Users, 
   FileText, 
@@ -19,6 +20,12 @@ import {
 
 export default function Dashboard() {
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL
+  const profilePicture = localStorage.getItem('profilePicture') || localStorage.getItem('avatar')
+  const resolvedProfilePicture =
+    profilePicture && !profilePicture.startsWith('http')
+      ? `${primaryBackendUrl}${profilePicture}`
+      : profilePicture
+  const userName = localStorage.getItem('name') || 'Admin'
   const [stats, setStats] = useState({
     totalStudents: 0,
     activeQuizzes: 0,
@@ -118,10 +125,15 @@ export default function Dashboard() {
                 </Link>
                 <Link
                   to="/admin/profile"
-                  className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold hover:bg-indigo-700 transition-colors"
+                  className="hover:opacity-90 transition-opacity"
                   title="Open profile"
                 >
-                  {(localStorage.getItem('name') || 'A').charAt(0).toUpperCase()}
+                  <Avatar className="w-10 h-10 border border-indigo-200">
+                    <AvatarImage src={resolvedProfilePicture || '/placeholder.svg'} alt={userName} />
+                    <AvatarFallback className="bg-indigo-600 text-white font-bold">
+                      {userName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </Link>
               </div>
             </div>
