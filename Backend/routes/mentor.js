@@ -1,10 +1,10 @@
 import express from 'express';
 import { body } from 'express-validator';
-import * as adminController from '../controllers/adminController.js';
+import * as mentorController from '../controllers/mentorController.js';
 import User from '../models/User.js';
-import Admin from '../models/Admin.js';
+import Mentor from '../models/Mentor.js';
 import Message from '../models/Message.js';
-import { adminAuth } from '../middlewares/auth.js';
+import { mentorAuth } from '../middlewares/auth.js';
 
 const router = express.Router();
 
@@ -12,16 +12,16 @@ router.post('/register', [
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
   body('name').notEmpty()
-], adminController.register);
+], mentorController.register);
 
 router.post('/login', [
   body('email').isEmail(),
   body('password').notEmpty()
-], adminController.login);
+], mentorController.login);
 
-router.get('/profile', adminAuth, adminController.getProfile);
+router.get('/profile', mentorAuth, mentorController.getProfile);
 
-router.put('/profile', adminAuth, [
+router.put('/profile', mentorAuth, [
   body('name').optional().trim().isLength({ min: 1 }).withMessage('Name cannot be empty'),
   body('title').optional().trim(),
   body('company').optional().trim(),
@@ -33,9 +33,9 @@ router.put('/profile', adminAuth, [
   body('linkedin').optional().trim(),
   body('github').optional().trim(),
   body('avatar').optional().trim(),
-], adminController.updateProfile);
+], mentorController.updateProfile);
 
-router.get('/all', adminController.getAll);
+router.get('/all', mentorController.getAll);
 
 router.get('/users', async (req, res) => {
   try {
@@ -47,10 +47,9 @@ router.get('/users', async (req, res) => {
   }
 });
 
-
 router.get('/conversations', async (req, res) => {
   try {
-    const messages = await Message.find({ room: { $regex: /^admin_/ } }).sort({ timestamp: -1 });
+    const messages = await Message.find({ room: { $regex: /^mentor_/ } }).sort({ timestamp: -1 });
 
     const convoMap = new Map();
 
@@ -62,9 +61,10 @@ router.get('/conversations', async (req, res) => {
         convoMap.set(roomId, {
           roomId,
           userName: user?.name || "Unknown",
+          userId,
           lastMessage: msg.content,
           lastMessageTime: new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          unreadCount: 0 // Optional: logic to count unread messages
+          unreadCount: 0
         });
       }
     }
@@ -76,23 +76,10 @@ router.get('/conversations', async (req, res) => {
   }
 });
 
-
-router.get("/:id", async (req, res) => {
-  const admin = await Admin.findById(req.params.id);
-  console.log(admin)
-  if (!admin) return res.status(404).json({ error: "Admin not found" });
-  res.json(admin);
-});
-
-
-router.get('/:roomId', async (req, res) => {
-  try {
-    const messages = await Message.find({ room: req.params.roomId }).sort({ timestamp: 1 });
-    res.json(messages);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch messages" });
-  }
+router.get('/:id', async (req, res) => {
+  const mentor = await Mentor.findById(req.params.id);
+  if (!mentor) return res.status(404).json({ error: "Mentor not found" });
+  res.json(mentor);
 });
 
 export default router;

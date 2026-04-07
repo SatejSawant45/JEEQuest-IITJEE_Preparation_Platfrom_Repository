@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -31,12 +31,14 @@ import {
   X,
 } from "lucide-react"
 
-export default function BloggingPlatform() {
+export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaffLayout = false } = {}) {
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
-  const [postType, setPostType] = useState("blog")
   const [showComments, setShowComments] = useState(null)
   const [newComment, setNewComment] = useState("")
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState(forceOwnOnly ? "my" : "all")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedSubject, setSelectedSubject] = useState("All Subjects")
+  const [selectedBlog, setSelectedBlog] = useState(null)
   
   // Blog data states
   const [allBlogs, setAllBlogs] = useState([])
@@ -53,6 +55,7 @@ export default function BloggingPlatform() {
     title: '',
     content: '',
     type: 'blog',
+    subject: 'General',
     tags: '',
     images: [],
     video: ''
@@ -64,6 +67,9 @@ export default function BloggingPlatform() {
   const [previewUrls, setPreviewUrls] = useState([])
   
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL
+  const subjectOptions = ["All Subjects", "Physics", "Chemistry", "Mathematics", "Biology", "General"]
+  const currentRole = localStorage.getItem("role")
+  const canCreateBlogs = currentRole === 'admin' || currentRole === 'mentor'
 
   // Helper function to get full profile picture URL
   const getProfilePictureUrl = (profilePicture) => {
@@ -127,8 +133,12 @@ export default function BloggingPlatform() {
   // Load blogs on component mount
   useEffect(() => {
     loadCurrentUser()
-    loadAllBlogs()
-    loadMyBlogs()
+    if (!forceOwnOnly) {
+      loadAllBlogs()
+    }
+    if (canCreateBlogs || forceOwnOnly) {
+      loadMyBlogs()
+    }
   }, [])
 
   const loadAllBlogs = async () => {
@@ -158,9 +168,13 @@ export default function BloggingPlatform() {
 
   const loadMyBlogs = async () => {
     try {
+      setLoading(true)
       const token = localStorage.getItem("jwtToken")
       if (!token) {
         console.log('No JWT token found for my blogs')
+        setMyBlogs([])
+        setError('Please login to view your blogs')
+        setLoading(false)
         return
       }
 
@@ -181,8 +195,13 @@ export default function BloggingPlatform() {
       console.log('Fetched my blogs data:', data)
       console.log('Number of my blogs:', data.blogs?.length || 0)
       setMyBlogs(data.blogs || [])
+      setError(null)
     } catch (err) {
       console.error('Error loading my blogs:', err)
+      setMyBlogs([])
+      setError('Failed to load your blogs')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -276,6 +295,11 @@ export default function BloggingPlatform() {
   }
 
   const handleCreatePost = async () => {
+    if (!canCreateBlogs) {
+      alert('Only mentors and admins can create blog posts.')
+      return
+    }
+
     if (!formData.title.trim() || !formData.content.trim()) {
       alert('Please fill in title and content')
       return
@@ -296,9 +320,24 @@ export default function BloggingPlatform() {
         imageUrls = await handleImageUpload()
       }
 
+      const tagsInput = formData.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+
+      if (formData.subject && formData.subject !== 'General') {
+        const hasSubjectTag = tagsInput.some(
+          (tag) => tag.toLowerCase() === formData.subject.toLowerCase()
+        )
+        if (!hasSubjectTag) {
+          tagsInput.push(formData.subject)
+        }
+      }
+
       // Prepare blog data with uploaded image URLs
       const blogData = {
         ...formData,
+        tags: tagsInput.join(', '),
         images: imageUrls
       }
 
@@ -324,6 +363,7 @@ export default function BloggingPlatform() {
         title: '',
         content: '',
         type: 'blog',
+        subject: 'General',
         tags: '',
         images: [],
         video: ''
@@ -336,7 +376,9 @@ export default function BloggingPlatform() {
 
       // Reload blogs
       await loadAllBlogs()
-      await loadMyBlogs()
+      if (canCreateBlogs) {
+        await loadMyBlogs()
+      }
 
       alert('Blog post created successfully!')
     } catch (err) {
@@ -417,37 +459,83 @@ export default function BloggingPlatform() {
     return `${Math.floor(diffInHours / 24)} days ago`
   }
 
+  const inferSubject = (post) => {
+    const tagsText = (post.tags || []).join(' ').toLowerCase()
+    const contentText = `${post.title || ''} ${post.content || ''}`.toLowerCase()
+    const text = `${tagsText} ${contentText}`
+
+    if (text.includes('physics')) return 'Physics'
+    if (text.includes('chemistry') || text.includes('organic') || text.includes('inorganic')) return 'Chemistry'
+    if (text.includes('mathematics') || text.includes('math') || text.includes('algebra') || text.includes('calculus')) return 'Mathematics'
+    if (text.includes('biology') || text.includes('botany') || text.includes('zoology')) return 'Biology'
+    return 'General'
+  }
+
   const getCurrentBlogs = () => {
-    const blogs = activeTab === 'all' ? allBlogs : myBlogs
+    const blogs = forceOwnOnly ? myBlogs : (canCreateBlogs && activeTab === 'my' ? myBlogs : allBlogs)
     console.log(`Getting ${activeTab} blogs:`, blogs)
     console.log('All blogs state:', allBlogs)
     console.log('My blogs state:', myBlogs)
     return blogs
   }
 
+  const filteredBlogs = useMemo(() => {
+    const blogs = getCurrentBlogs()
+    const query = searchTerm.trim().toLowerCase()
+
+    return blogs.filter((post) => {
+      const postSubject = inferSubject(post)
+      const matchesSubject = selectedSubject === 'All Subjects' || selectedSubject === postSubject
+      const matchesSearch =
+        !query ||
+        post.title?.toLowerCase().includes(query) ||
+        post.content?.toLowerCase().includes(query) ||
+        post.author?.name?.toLowerCase().includes(query) ||
+        post.tags?.some((tag) => tag.toLowerCase().includes(query))
+
+      return matchesSubject && matchesSearch
+    })
+  }, [activeTab, allBlogs, myBlogs, searchTerm, selectedSubject])
+
+  const groupedBlogs = useMemo(() => {
+    const grouped = {}
+    filteredBlogs.forEach((post) => {
+      const subject = inferSubject(post)
+      if (!grouped[subject]) grouped[subject] = []
+      grouped[subject].push(post)
+    })
+    return grouped
+  }, [filteredBlogs])
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className={`${embeddedInStaffLayout ? 'relative' : 'sticky top-0'} z-50 bg-white border-b border-gray-200`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-gray-900">BlogSpace</h1>
               <div className="hidden md:block">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input placeholder="Search posts, topics, or users..." className="pl-10 w-80" />
+                  <Input
+                    placeholder="Search posts, topics, or users..."
+                    className="pl-10 w-80"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Dialog open={isCreatePostOpen} onOpenChange={setIsCreatePostOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Post
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              {canCreateBlogs && (
+                <Dialog open={isCreatePostOpen} onOpenChange={setIsCreatePostOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-black hover:bg-gray-900 text-white">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Blog
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create New Post</DialogTitle>
                   </DialogHeader>
@@ -472,6 +560,21 @@ export default function BloggingPlatform() {
                         onChange={(e) => handleInputChange('title', e.target.value)}
                         placeholder={formData.type === "blog" ? "Enter your blog post title..." : "What's your question?"}
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="subject">Subject</Label>
+                      <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
+                        <SelectTrigger id="subject">
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjectOptions.filter((item) => item !== 'All Subjects').map((subject) => (
+                            <SelectItem key={subject} value={subject}>
+                              {subject}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="content">Content</Label>
@@ -569,29 +672,60 @@ export default function BloggingPlatform() {
                       </Button>
                     </div>
                   </div>
-                </DialogContent>
-              </Dialog>
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={getProfilePictureUrl(currentUser?.profilePicture)} />
-                <AvatarFallback>
-                  {currentUser?.name ? currentUser.name[0].toUpperCase() : <User className="w-4 h-4" />}
-                </AvatarFallback>
-              </Avatar>
+                  </DialogContent>
+                </Dialog>
+              )}
+              {!embeddedInStaffLayout && (
+                <>
+                  <Button variant="ghost" size="icon">
+                    <Bell className="w-5 h-5" />
+                  </Button>
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={getProfilePictureUrl(currentUser?.profilePicture)} />
+                    <AvatarFallback>
+                      {currentUser?.name ? currentUser.name[0].toUpperCase() : <User className="w-4 h-4" />}
+                    </AvatarFallback>
+                  </Avatar>
+                </>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="all">All Blogs</TabsTrigger>
-            <TabsTrigger value="my">My Blogs</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!forceOwnOnly && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className={`grid w-full ${canCreateBlogs ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <TabsTrigger value="all">All Blogs</TabsTrigger>
+              {canCreateBlogs && <TabsTrigger value="my">My Blogs</TabsTrigger>}
+            </TabsList>
+          </Tabs>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search in blogs..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <SelectTrigger className="sm:w-56">
+              <SelectValue placeholder="Filter by subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjectOptions.map((subject) => (
+                <SelectItem key={subject} value={subject}>
+                  {subject}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {loading ? (
           <div className="text-center py-12">
@@ -605,66 +739,98 @@ export default function BloggingPlatform() {
               Try Again
             </Button>
           </div>
-        ) : getCurrentBlogs().length === 0 ? (
+        ) : filteredBlogs.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 mb-4">
-              {activeTab === 'my' ? 'You haven\'t created any blog posts yet.' : 'No blog posts available.'}
+              {(forceOwnOnly || (canCreateBlogs && activeTab === 'my'))
+                ? 'You haven\'t created any blog posts yet.'
+                : 'No blog posts available for this filter.'}
             </p>
-            {activeTab === 'my' && (
-              <Button onClick={() => setIsCreatePostOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-                Create Your First Post
+            {(forceOwnOnly || (canCreateBlogs && activeTab === 'my')) && (
+              <Button onClick={() => setIsCreatePostOpen(true)} className="bg-black hover:bg-gray-900 text-white">
+                Create Your First Blog
               </Button>
             )}
           </div>
         ) : (
-          <div className="space-y-6">
-            {getCurrentBlogs().map((post) => (
-            <Card key={post._id} className="bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={getProfilePictureUrl(post.author.profilePicture)} />
-                      <AvatarFallback>{post.author.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-gray-900">{post.author.name}</h3>
-                        <span className="text-gray-500 text-sm">@{post.author.email.split('@')[0]}</span>
-                        <Badge variant={post.type === "blog" ? "default" : "secondary"} className="text-xs">
-                          {post.type === "blog" ? "Blog" : "Question"}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-500 text-sm">{formatTimestamp(post.createdAt)}</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
+          <div className="space-y-8">
+            {Object.entries(groupedBlogs).map(([subject, posts]) => (
+              <div key={subject} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-semibold text-gray-900">{subject}</h2>
+                  <Badge variant="secondary">{posts.length} blog{posts.length !== 1 ? 's' : ''}</Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">{post.title}</h2>
-                  <p className="text-gray-700 leading-relaxed">{post.content}</p>
-                </div>
+                <Separator />
 
-                {post.images && post.images.length > 0 && (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {posts.map((post) => (
+                    <Card
+                      key={post._id}
+                      className="bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        setSelectedBlog(post)
+                        setShowComments(null)
+                        setNewComment("")
+                      }}
+                    >
+                      {post.images?.[0] && (
+                        <div className="h-40 w-full overflow-hidden rounded-t-lg">
+                          <img src={getImageUrl(post.images[0])} alt={post.title} className="h-full w-full object-cover" />
+                        </div>
+                      )}
+                      <CardContent className="p-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={post.type === "blog" ? "default" : "secondary"} className="text-xs">
+                            {post.type === "blog" ? "Blog" : "Question"}
+                          </Badge>
+                          <span className="text-xs text-gray-500">{formatTimestamp(post.createdAt)}</span>
+                        </div>
+                        <h3 className="font-semibold text-lg text-gray-900 line-clamp-2">{post.title}</h3>
+                        <p className="text-sm text-gray-600 line-clamp-3">{post.content}</p>
+                        <div className="flex items-center justify-between text-sm text-gray-500">
+                          <span>{post.author?.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex items-center gap-1"><Heart className="w-3 h-3" /> {post.likes || 0}</span>
+                            <span className="inline-flex items-center gap-1"><MessageCircle className="w-3 h-3" /> {post.comments?.length || 0}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Dialog open={!!selectedBlog} onOpenChange={(open) => !open && setSelectedBlog(null)}>
+          <DialogContent className="max-w-5xl max-h-[88vh] overflow-y-auto">
+            {selectedBlog && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-2xl leading-tight">{selectedBlog.title}</DialogTitle>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span>{selectedBlog.author?.name}</span>
+                    <span>•</span>
+                    <span>{formatTimestamp(selectedBlog.createdAt)}</span>
+                    <Badge variant={selectedBlog.type === "blog" ? "default" : "secondary"} className="ml-2 text-xs">
+                      {selectedBlog.type === "blog" ? "Blog" : "Question"}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">{inferSubject(selectedBlog)}</Badge>
+                  </div>
+                </DialogHeader>
+
+                {selectedBlog.images && selectedBlog.images.length > 0 && (
                   <div className="space-y-2">
-                    {post.images.length === 1 ? (
+                    {selectedBlog.images.length === 1 ? (
                       <div className="rounded-lg overflow-hidden">
-                        <img src={getImageUrl(post.images[0])} alt="Post image" className="w-full h-64 object-cover" />
+                        <img src={getImageUrl(selectedBlog.images[0])} alt="Post image" className="w-full h-72 object-cover" />
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
-                        {post.images.slice(0, 4).map((image, index) => (
-                          <div key={index} className="rounded-lg overflow-hidden relative">
-                            <img src={getImageUrl(image)} alt={`Post image ${index + 1}`} className="w-full h-32 object-cover" />
-                            {index === 3 && post.images.length > 4 && (
-                              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                <span className="text-white font-semibold">+{post.images.length - 4} more</span>
-                              </div>
-                            )}
+                        {selectedBlog.images.map((image, index) => (
+                          <div key={index} className="rounded-lg overflow-hidden">
+                            <img src={getImageUrl(image)} alt={`Post image ${index + 1}`} className="w-full h-36 object-cover" />
                           </div>
                         ))}
                       </div>
@@ -672,12 +838,13 @@ export default function BloggingPlatform() {
                   </div>
                 )}
 
-                {post.video && (
-                  <div className="rounded-lg overflow-hidden bg-gray-100 h-64 flex items-center justify-center">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedBlog.content}</p>
+
+                {selectedBlog.video && (
+                  <div className="rounded-lg overflow-hidden bg-gray-100 h-48 flex items-center justify-center">
                     <div className="text-center">
                       <Video className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">Video content</p>
-                      <a href={post.video} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                      <a href={selectedBlog.video} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
                         Watch Video
                       </a>
                     </div>
@@ -685,10 +852,8 @@ export default function BloggingPlatform() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {post.tags && post.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      #{tag}
-                    </Badge>
+                  {selectedBlog.tags?.map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">#{tag}</Badge>
                   ))}
                 </div>
 
@@ -696,35 +861,34 @@ export default function BloggingPlatform() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-6">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-gray-500 hover:text-red-500"
-                      onClick={() => handleLike(post._id)}
+                      onClick={async () => {
+                        await handleLike(selectedBlog._id)
+                        await loadAllBlogs()
+                        await loadMyBlogs()
+                        const updatedBlog = (activeTab === 'all' ? allBlogs : myBlogs).find((blog) => blog._id === selectedBlog._id)
+                        if (updatedBlog) setSelectedBlog(updatedBlog)
+                      }}
                     >
                       <Heart className="w-4 h-4 mr-1" />
-                      {post.likes || 0}
+                      {selectedBlog.likes || 0}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-gray-500 hover:text-blue-500"
-                      onClick={() => toggleComments(post._id)}
+                      onClick={() => toggleComments(selectedBlog._id)}
                     >
                       <MessageCircle className="w-4 h-4 mr-1" />
-                      {post.comments ? post.comments.length : 0}
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-green-500">
-                      <Share2 className="w-4 h-4 mr-1" />
-                      {post.shares || 0}
+                      {selectedBlog.comments ? selectedBlog.comments.length : 0}
                     </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-gray-500 hover:text-yellow-500">
-                    <Bookmark className="w-4 h-4" />
-                  </Button>
                 </div>
 
-                {showComments === post._id && (
+                {showComments === selectedBlog._id && (
                   <div className="space-y-4 pt-4 border-t">
                     <div className="flex space-x-3">
                       <Avatar className="w-8 h-8">
@@ -743,7 +907,13 @@ export default function BloggingPlatform() {
                         <div className="flex justify-end">
                           <Button
                             size="sm"
-                            onClick={() => handleAddComment(post._id)}
+                            onClick={async () => {
+                              await handleAddComment(selectedBlog._id)
+                              await loadAllBlogs()
+                              await loadMyBlogs()
+                              const updatedBlog = (activeTab === 'all' ? allBlogs : myBlogs).find((blog) => blog._id === selectedBlog._id)
+                              if (updatedBlog) setSelectedBlog(updatedBlog)
+                            }}
                             className="bg-blue-600 hover:bg-blue-700"
                           >
                             <Send className="w-4 h-4 mr-1" />
@@ -754,57 +924,41 @@ export default function BloggingPlatform() {
                     </div>
 
                     <div className="space-y-4">
-                      {post.comments && post.comments.map((comment) => (
-                          <div key={comment._id} className="flex space-x-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={getProfilePictureUrl(comment.author.profilePicture)} />
-                              <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="bg-gray-50 rounded-lg p-3">
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <span className="font-semibold text-sm">{comment.author.name}</span>
-                                  <span className="text-gray-500 text-xs">@{comment.author.email.split('@')[0]}</span>
-                                  <span className="text-gray-500 text-xs">•</span>
-                                  <span className="text-gray-500 text-xs">{formatTimestamp(comment.createdAt)}</span>
-                                </div>
-                                <p className="text-gray-700 text-sm">{comment.content}</p>
+                      {selectedBlog.comments && selectedBlog.comments.map((comment) => (
+                        <div key={comment._id} className="flex space-x-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={getProfilePictureUrl(comment.author.profilePicture)} />
+                            <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="font-semibold text-sm">{comment.author.name}</span>
+                                <span className="text-gray-500 text-xs">@{comment.author.email.split('@')[0]}</span>
+                                <span className="text-gray-500 text-xs">•</span>
+                                <span className="text-gray-500 text-xs">{formatTimestamp(comment.createdAt)}</span>
                               </div>
-                              <div className="flex items-center space-x-4 mt-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-gray-500 hover:text-blue-500 h-6 px-2"
-                                >
-                                  <ThumbsUp className="w-3 h-3 mr-1" />
-                                  {comment.likes || 0}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-gray-500 hover:text-red-500 h-6 px-2"
-                                >
-                                  <ThumbsDown className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-gray-500 hover:text-blue-500 h-6 px-2"
-                                >
-                                  Reply
-                                </Button>
-                              </div>
+                              <p className="text-gray-700 text-sm">{comment.content}</p>
+                            </div>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500 h-6 px-2">
+                                <ThumbsUp className="w-3 h-3 mr-1" />
+                                {comment.likes || 0}
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-500 h-6 px-2">
+                                <ThumbsDown className="w-3 h-3" />
+                              </Button>
                             </div>
                           </div>
-                        ))}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-            ))}
-          </div>
-        )}
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )

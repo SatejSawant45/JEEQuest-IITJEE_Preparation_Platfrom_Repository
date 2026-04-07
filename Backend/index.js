@@ -8,6 +8,7 @@ import attemptRoutes from './routes/attempt.js';
 import quizRoutes from './routes/quiz.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import adminRoutes from './routes/admin.js';
+import mentorRoutes from './routes/mentor.js';
 import messageRoutes from './routes/message.js';
 import blogRoutes from './routes/blog.js';
 import lectureRoutes from './routes/lecture.js';
@@ -49,6 +50,7 @@ app.use((err, req, res, next) => {
 app.use('/api/auth',authRoutes);
 app.use('/api/quiz',quizRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/mentor', mentorRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/attempt',attemptRoutes);
 app.use('/api/leaderboard',leaderboardRoutes);

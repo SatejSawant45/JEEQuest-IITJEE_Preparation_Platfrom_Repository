@@ -115,6 +115,22 @@ export default function AdminSidebar() {
               >
                 Question Bank
               </Link>
+              <Link
+                to="/admin/profile"
+                className={`flex items-center gap-3 px-12 py-2 hover:bg-slate-800 transition-colors text-sm ${
+                  isActive('/admin/profile') ? 'text-indigo-400' : 'text-slate-300'
+                }`}
+              >
+                Edit Profile
+              </Link>
+              <Link
+                to="/admin/blogs"
+                className={`flex items-center gap-3 px-12 py-2 hover:bg-slate-800 transition-colors text-sm ${
+                  isActive('/admin/blogs') ? 'text-indigo-400' : 'text-slate-300'
+                }`}
+              >
+                Study Blogs
+              </Link>
             </div>
           )}
 

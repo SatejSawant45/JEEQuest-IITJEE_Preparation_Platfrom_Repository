@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const adminSchema = new mongoose.Schema(
+const mentorSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -9,7 +9,7 @@ const adminSchema = new mongoose.Schema(
     },
     title: String,
     company: String,
-    avatar: String, // URL to profile image
+    avatar: String,
     rating: {
       type: Number,
       default: 0,
@@ -19,7 +19,7 @@ const adminSchema = new mongoose.Schema(
       default: 0,
     },
     location: String,
-    experience: String, // e.g. "5 years"
+    experience: String,
     description: {
       type: String,
       trim: true,
@@ -46,8 +46,6 @@ const adminSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-
-    // 👇 Authentication fields
     email: {
       type: String,
       required: true,
@@ -64,8 +62,7 @@ const adminSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 👇 Hash password before saving
-adminSchema.pre('save', async function (next) {
+mentorSchema.pre('save', async function (next) {
   try {
     if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
@@ -76,5 +73,4 @@ adminSchema.pre('save', async function (next) {
   }
 });
 
-
-export default mongoose.model('Admin', adminSchema);
+export default mongoose.model('Mentor', mentorSchema);

@@ -1,17 +1,18 @@
 import express from 'express';
 import { body } from 'express-validator';
 import * as blogController from '../controllers/blogController.js';
-import { auth } from '../middlewares/auth.js';
+import { adminOrMentorAuth, auth } from '../middlewares/auth.js';
 import blogUpload from '../middlewares/blogUpload.js';
 
 const router = express.Router();
 
 // Public routes
 router.get('/', blogController.getAllBlogs);
+router.get('/user/my-blogs', adminOrMentorAuth, blogController.getUserBlogs);
 router.get('/:id', blogController.getBlogById);
 
 // Protected routes (require authentication)
-router.post('/', auth, [
+router.post('/', adminOrMentorAuth, [
   body('title').trim().isLength({ min: 1, max: 200 }).withMessage('Title is required and must be less than 200 characters'),
   body('content').trim().isLength({ min: 1, max: 10000 }).withMessage('Content is required and must be less than 10000 characters'),
   body('type').optional().isIn(['blog', 'question']).withMessage('Type must be either blog or question'),
@@ -20,9 +21,7 @@ router.post('/', auth, [
   body('video').optional().trim()
 ], blogController.createBlog);
 
-router.get('/user/my-blogs', auth, blogController.getUserBlogs);
-
-router.put('/:id', auth, [
+router.put('/:id', adminOrMentorAuth, [
   body('title').optional().trim().isLength({ min: 1, max: 200 }).withMessage('Title must be less than 200 characters'),
   body('content').optional().trim().isLength({ min: 1, max: 10000 }).withMessage('Content must be less than 10000 characters'),
   body('type').optional().isIn(['blog', 'question']).withMessage('Type must be either blog or question'),
@@ -31,7 +30,7 @@ router.put('/:id', auth, [
   body('video').optional().trim()
 ], blogController.updateBlog);
 
-router.delete('/:id', auth, blogController.deleteBlog);
+router.delete('/:id', adminOrMentorAuth, blogController.deleteBlog);
 
 router.post('/:id/like', auth, blogController.toggleLikeBlog);
 
@@ -42,6 +41,6 @@ router.post('/:id/comment', auth, [
 router.post('/:id/bookmark', auth, blogController.toggleBookmark);
 
 // Blog image upload routes
-router.post('/upload-images', auth, blogUpload.array('images', 5), blogController.uploadBlogImages);
+router.post('/upload-images', adminOrMentorAuth, blogUpload.array('images', 5), blogController.uploadBlogImages);
 
 export default router;

@@ -9,7 +9,13 @@ const videoCallSchema = new mongoose.Schema(
     },
     admin: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      refPath: "adminModel",
+      required: true,
+    },
+    adminModel: {
+      type: String,
+      enum: ["Admin", "Mentor"],
+      default: "Admin",
       required: true,
     },
     status: {

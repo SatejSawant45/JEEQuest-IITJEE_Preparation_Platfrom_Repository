@@ -16,8 +16,11 @@ export default function ChatPage() {
   const userName = localStorage.getItem("name") || "Student";
   console.log(userId);
   console.log(adminId);
-  const cleanAdminId = adminId.replace(/^:/, "");  // Remove leading colon
-  const roomId = `${cleanAdminId}_${userId}`;
+  const cleanParamId = adminId.replace(/^:/, "");
+  const isMentorChat = cleanParamId.startsWith("mentor_");
+  const cleanAdminId = isMentorChat ? cleanParamId.replace("mentor_", "") : cleanParamId;
+  const roomId = isMentorChat ? `mentor_${userId}` : `${cleanAdminId}_${userId}`;
+  const staffModel = isMentorChat ? "Mentor" : "Admin";
   console.log(`clean admin id ${cleanAdminId}`)
   console.log(roomId);
 
@@ -51,7 +54,11 @@ export default function ChatPage() {
 
     const fetchAdmin = async () => {
       try {
-        const res = await fetch(`${primaryBackendUrl}/api/admin/${cleanAdminId}`);
+        const profileEndpoint = isMentorChat
+          ? `${primaryBackendUrl}/api/mentor/${cleanAdminId}`
+          : `${primaryBackendUrl}/api/admin/${cleanAdminId}`;
+
+        const res = await fetch(profileEndpoint);
         const data = await res.json();
         console.log(data);
         setAdmin({
@@ -139,6 +146,7 @@ export default function ChatPage() {
     socket.emit("initiate_call", {
       studentId: userId,
       adminId: cleanAdminId,
+      adminModel: staffModel,
       roomId: callRoomId,
       studentName: userName
     });

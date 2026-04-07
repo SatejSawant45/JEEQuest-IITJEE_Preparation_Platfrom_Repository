@@ -11,6 +11,7 @@ import {
   BarChart3,
   FileQuestion,
   Bell,
+  UserCircle,
   Edit,
   Trash2,
   Search
@@ -109,9 +110,19 @@ export default function Dashboard() {
                 <span className="font-semibold text-gray-900">
                   {localStorage.getItem('name') || 'Admin'}
                 </span>
-                <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                <Link
+                  to="/admin/profile"
+                  className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                >
+                  Edit Profile
+                </Link>
+                <Link
+                  to="/admin/profile"
+                  className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold hover:bg-indigo-700 transition-colors"
+                  title="Open profile"
+                >
                   {(localStorage.getItem('name') || 'A').charAt(0).toUpperCase()}
-                </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -295,6 +306,37 @@ export default function Dashboard() {
                 >
                   View Analytics
                 </button>
+              </div>
+
+              {/* Profile */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <UserCircle className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 mb-1">Profile</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full font-medium">
+                        Editable
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Update your name, title, company, contact links, avatar, and description.
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>Admin-only</span>
+                      <span>•</span>
+                      <span>Secure</span>
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  to="/admin/profile"
+                  className="mt-4 w-full block text-center bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Edit Profile
+                </Link>
               </div>
 
               {/* Question Bank */}

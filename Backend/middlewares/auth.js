@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Admin from '../models/Admin.js';
+import Mentor from '../models/Mentor.js';
 
 export const auth = async (req, res, next) => {
     console.log("in middleware");
@@ -95,6 +96,63 @@ export const authOrAdmin = async (req, res, next) => {
         
     } catch (error) {
         console.log('❌ Auth error:', error.message)
+        res.status(401).json({ message: 'Please authenticate !!' });
+    }
+}
+
+export const mentorAuth = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer', '').replace(' ', '');
+        if (!token) {
+            throw new Error();
+        }
+
+        const decoded = jwt.verify(token, "satejsawantsecret");
+        const mentor = await Mentor.findById(decoded.id);
+
+        if (!mentor) {
+            throw new Error();
+        }
+
+        req.user = mentor;
+        req.mentor = mentor;
+        req.staff = mentor;
+        req.staffModel = 'Mentor';
+        next();
+    } catch (error) {
+        res.status(401).json({ message: 'Please authenticate !!' });
+    }
+}
+
+export const adminOrMentorAuth = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer', '').replace(' ', '');
+        if (!token) {
+            throw new Error('No token provided');
+        }
+
+        const decoded = jwt.verify(token, "satejsawantsecret");
+
+        const admin = await Admin.findById(decoded.id);
+        if (admin) {
+            req.user = admin;
+            req.admin = admin;
+            req.staff = admin;
+            req.staffModel = 'Admin';
+            return next();
+        }
+
+        const mentor = await Mentor.findById(decoded.id);
+        if (mentor) {
+            req.user = mentor;
+            req.mentor = mentor;
+            req.staff = mentor;
+            req.staffModel = 'Mentor';
+            return next();
+        }
+
+        throw new Error('Staff not found');
+    } catch (error) {
         res.status(401).json({ message: 'Please authenticate !!' });
     }
 }

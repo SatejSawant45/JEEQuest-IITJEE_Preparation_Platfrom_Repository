@@ -5,6 +5,7 @@ import UserAuth from "./pages/auth/UserAuth.jsx";
 import AdminAuth from "./pages/auth/AdminAuth.jsx";
 import ModernUserAuth from "./pages/auth/ModernUserAuth.jsx";
 import ModernAdminAuth from "./pages/auth/ModernAdminAuth.jsx";
+import ModernMentorAuth from "./pages/auth/ModernMentorAuth.jsx";
 import UserDashboard from "./pages/User/DashboardNonShadCNuser.jsx";
 import AdminDashboard from "./pages/Admin/Dashboard.jsx";
 import ManageQuizzes from "./pages/Admin/ManageQuizzes.jsx";
@@ -36,6 +37,12 @@ import { SocketContext } from './context/socket.js';
 import socket from './context/socket.js';
 import VideoCall from './pages/User/VideoCallNew.jsx';
 import AdminVideoCall from './pages/Admin/AdminVideoCallNew.jsx';
+import AdminBlogsPage from './pages/Admin/Blogs.jsx';
+import MentorDashboard from './pages/Mentor/Dashboard.jsx';
+import MentorBlogsPage from './pages/Mentor/Blogs.jsx';
+import MentorInbox from './pages/Mentor/MentorInbox.jsx';
+import MentorProfile from './pages/Mentor/Profile.jsx';
+import MentorVideoCall from './pages/Mentor/MentorVideoCallNew.jsx';
 import DashboardLayout from './pages/User/DashboardLayout.jsx';
 import HomeDashboard from './pages/User/HomeDashboard.jsx';
 
@@ -51,6 +58,8 @@ function App() {
                     <Route path="/user/signup" element={<ModernUserAuth></ModernUserAuth>}></Route>
                     <Route path="/admin/login" element={<ModernAdminAuth></ModernAdminAuth>}></Route>
                     <Route path="/admin/signup" element={<ModernAdminAuth></ModernAdminAuth>}></Route>
+                    <Route path="/mentor/login" element={<ModernMentorAuth></ModernMentorAuth>}></Route>
+                    <Route path="/mentor/signup" element={<ModernMentorAuth></ModernMentorAuth>}></Route>
                     <Route path="/admin/profile" element={<AdminProfile></AdminProfile>}></Route>
                     <Route path="chat/:adminId" element={<Chats></Chats>}></Route>
                     <Route path="/videocall/:roomId" element={<VideoCall />} />
@@ -76,7 +85,13 @@ function App() {
                     <Route path="admin/quiz/:id/edit" element={<EditQuiz></EditQuiz>}></Route>
                     <Route path="admin/lecture/create" element={<CreateLecture></CreateLecture>}></Route>
                     <Route path="admin/lecture/:id/edit" element={<EditLecture></EditLecture>}></Route>
+                    <Route path="admin/blogs" element={<AdminBlogsPage></AdminBlogsPage>}></Route>
                     <Route path="admin/videocall/:roomId" element={<AdminVideoCall></AdminVideoCall>} />
+                    <Route path="mentor/dashboard" element={<MentorDashboard></MentorDashboard>}></Route>
+                    <Route path="mentor/dashboard/chats" element={<MentorInbox></MentorInbox>}></Route>
+                    <Route path="mentor/blogs" element={<MentorBlogsPage></MentorBlogsPage>}></Route>
+                    <Route path="mentor/profile" element={<MentorProfile></MentorProfile>}></Route>
+                    <Route path="mentor/videocall/:roomId" element={<MentorVideoCall></MentorVideoCall>} />
                     <Route path="/quiz/:id" element={<TakeQuiz></TakeQuiz>}></Route>
                 </Routes>
             </SocketContext.Provider>

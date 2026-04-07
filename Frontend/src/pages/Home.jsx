@@ -348,7 +348,7 @@ export default function LandingPage() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                <Button className="bg-gray-900 hover:bg-gray-800 text-white">Get Started</Button>
+                                <Button className="bg-gray-900 hover:bg-gray-800 text-white" onClick={() => navigate("/user/login")}>Get Started</Button>
                             </motion.div>
                         </div>
 
@@ -387,7 +387,7 @@ export default function LandingPage() {
                                     </motion.a>
                                 ))}
                                 <motion.div variants={itemVariants}>
-                                    <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white">Get Started</Button>
+                                    <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white" onClick={() => navigate("/user/login")}>Get Started</Button>
                                 </motion.div>
                             </motion.div>
                         </motion.div>
@@ -443,7 +443,7 @@ export default function LandingPage() {
                             </motion.p>
                         </motion.div>
 
-                        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
                             <motion.div
                                 whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}
                                 whileTap={{ scale: 0.95 }}
@@ -468,7 +468,7 @@ export default function LandingPage() {
                             </motion.div>
 
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                <Button size="lg" variant="outline" className="group bg-transparent relative overflow-hidden">
+                                <Button size="lg" variant="outline" className="group bg-transparent relative overflow-hidden" onClick={() => navigate("/mentor/signup")}>
                                     <motion.div
                                         className="absolute inset-0 bg-gray-100"
                                         initial={{ scale: 0 }}
@@ -483,6 +483,21 @@ export default function LandingPage() {
                                             <Play className="mr-2 h-4 w-4" />
                                         </motion.div>
                                         Get Started as Mentor
+                                    </span>
+                                </Button>
+                            </motion.div>
+
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button size="lg" variant="outline" className="group bg-transparent relative overflow-hidden" onClick={() => navigate("/admin/login")}>
+                                    <motion.div
+                                        className="absolute inset-0 bg-gray-100"
+                                        initial={{ scale: 0 }}
+                                        whileHover={{ scale: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                    />
+                                    <span className="relative z-10 flex items-center">
+                                        <Shield className="mr-2 h-4 w-4" />
+                                        Continue as Admin
                                     </span>
                                 </Button>
                             </motion.div>

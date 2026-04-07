@@ -19,6 +19,7 @@ const io = new Server(httpServer, {
 
 const userToSocketMap = {}; 
 const onlineAdmins = new Set(); // Track online admins
+const onlineMentors = new Set();
 
 app.get('/', (req, res) => {
   console.log("GET /");
@@ -29,7 +30,8 @@ app.get('/test', (req, res) => {
   res.json({ 
     status: 'ok', 
     connectedSockets: io.sockets.sockets.size,
-    onlineAdmins: Array.from(onlineAdmins)
+    onlineAdmins: Array.from(onlineAdmins),
+    onlineMentors: Array.from(onlineMentors)
   });
 });
 
@@ -40,24 +42,31 @@ io.on('connection', (socket) => {
     userToSocketMap[userId] = socket.id;
     console.log(`Registered ${userRole} ${userId} with socket ${socket.id}`);
     
-    // Track admin online status
+    // Track admin/mentor online status
     if (userRole === 'admin') {
       onlineAdmins.add(userId);
       console.log(`Admin ${userId} is now online`);
       // Broadcast admin online status
       io.emit("admin_status_changed", { adminId: userId, isOnline: true });
+    } else if (userRole === 'mentor') {
+      onlineMentors.add(userId);
+      console.log(`Mentor ${userId} is now online`);
+      io.emit("mentor_status_changed", { mentorId: userId, isOnline: true });
     }
   });
 
   // New event: Initiate video call
-  socket.on("initiate_call", async ({ studentId, adminId, roomId, studentName }) => {
+  socket.on("initiate_call", async ({ studentId, adminId, adminModel, roomId, studentName }) => {
     const adminSocketId = userToSocketMap[adminId];
+    const resolvedModel = adminModel || 'Admin';
+    const isStaffOnline =
+      resolvedModel === 'Mentor' ? onlineMentors.has(adminId) : onlineAdmins.has(adminId);
     
     console.log(`Call initiated: Student ${studentId} calling Admin ${adminId}`);
-    console.log(`Admin ${adminId} online:`, onlineAdmins.has(adminId));
+    console.log(`Staff ${adminId} (${resolvedModel}) online:`, isStaffOnline);
     console.log(`Admin socket ID:`, adminSocketId);
     
-    if (adminSocketId && onlineAdmins.has(adminId)) {
+    if (adminSocketId && isStaffOnline) {
       // Admin is online - send incoming call notification
       console.log(`Sending incoming_call to admin socket ${adminSocketId}`);
       io.to(adminSocketId).emit("incoming_call", {
@@ -75,6 +84,7 @@ io.on('connection', (socket) => {
           body: JSON.stringify({
             studentId,
             adminId,
+            adminModel: resolvedModel,
             roomId,
             status: "initiated"
           })
@@ -101,6 +111,7 @@ io.on('connection', (socket) => {
           body: JSON.stringify({
             studentId,
             adminId,
+            adminModel: resolvedModel,
             roomId,
             status: "missed"
           })
@@ -112,7 +123,7 @@ io.on('connection', (socket) => {
   });
 
   // New event: Accept call
-  socket.on("accept_call", async ({ studentId, adminId, roomId }) => {
+  socket.on("accept_call", async ({ studentId, adminId, adminModel, roomId }) => {
     const studentSocketId = userToSocketMap[studentId];
     console.log(`Admin ${adminId} accepted call from student ${studentId}`);
     
@@ -127,6 +138,7 @@ io.on('connection', (socket) => {
           body: JSON.stringify({
             studentId,
             adminId,
+            adminModel: adminModel || 'Admin',
             roomId,
             status: "accepted",
             startedAt: new Date()
@@ -139,7 +151,7 @@ io.on('connection', (socket) => {
   });
 
   // New event: Reject call
-  socket.on("reject_call", async ({ studentId, adminId, roomId }) => {
+  socket.on("reject_call", async ({ studentId, adminId, adminModel, roomId }) => {
     const studentSocketId = userToSocketMap[studentId];
     console.log(`Admin ${adminId} rejected call from student ${studentId}`);
     
@@ -154,6 +166,7 @@ io.on('connection', (socket) => {
           body: JSON.stringify({
             studentId,
             adminId,
+            adminModel: adminModel || 'Admin',
             roomId,
             status: "rejected"
           })
@@ -165,7 +178,7 @@ io.on('connection', (socket) => {
   });
 
   // New event: End call
-  socket.on("end_call", async ({ studentId, adminId, roomId, duration }) => {
+  socket.on("end_call", async ({ studentId, adminId, adminModel, roomId, duration }) => {
     console.log(`Call ended: Student ${studentId} - Admin ${adminId}, Duration: ${duration}s`);
     
     // Notify other party
@@ -187,6 +200,7 @@ io.on('connection', (socket) => {
         body: JSON.stringify({
           studentId,
           adminId,
+          adminModel: adminModel || 'Admin',
           roomId,
           status: "completed",
           duration,
@@ -274,6 +288,10 @@ io.on('connection', (socket) => {
           onlineAdmins.delete(userId);
           console.log(`Admin ${userId} is now offline`);
           io.emit("admin_status_changed", { adminId: userId, isOnline: false });
+        } else if (onlineMentors.has(userId)) {
+          onlineMentors.delete(userId);
+          console.log(`Mentor ${userId} is now offline`);
+          io.emit("mentor_status_changed", { mentorId: userId, isOnline: false });
         }
         break;
       }

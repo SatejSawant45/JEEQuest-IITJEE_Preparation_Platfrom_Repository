@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import AdminSidebar from '@/components/AdminSidebar'
+import MentorSidebar from '@/components/MentorSidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Mail, Briefcase, MapPin, Calendar } from 'lucide-react'
 
-export default function AdminProfile() {
+export default function MentorProfile() {
   const [profile, setProfile] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -34,7 +34,7 @@ export default function AdminProfile() {
     const loadProfile = async () => {
       try {
         const token = localStorage.getItem('jwtToken')
-        const response = await fetch(`${primaryBackendUrl}/api/admin/profile`, {
+        const response = await fetch(`${primaryBackendUrl}/api/mentor/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -58,7 +58,7 @@ export default function AdminProfile() {
           })
         }
       } catch (error) {
-        console.error('Failed to load admin profile:', error)
+        console.error('Failed to load mentor profile:', error)
       } finally {
         setLoading(false)
       }
@@ -75,7 +75,7 @@ export default function AdminProfile() {
     try {
       setSaving(true)
       const token = localStorage.getItem('jwtToken')
-      const response = await fetch(`${primaryBackendUrl}/api/admin/profile`, {
+      const response = await fetch(`${primaryBackendUrl}/api/mentor/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -89,30 +89,30 @@ export default function AdminProfile() {
         throw new Error(data.message || 'Failed to update profile')
       }
 
-      setProfile(data.admin)
-      localStorage.setItem('name', data.admin.name || '')
-      localStorage.setItem('email', data.admin.email || '')
+      setProfile(data.mentor)
+      localStorage.setItem('name', data.mentor.name || '')
+      localStorage.setItem('email', data.mentor.email || '')
       alert('Profile updated successfully')
     } catch (error) {
-      console.error('Failed to update admin profile:', error)
+      console.error('Failed to update mentor profile:', error)
       alert(error.message || 'Failed to update profile')
     } finally {
       setSaving(false)
     }
   }
 
-  const displayName = profile?.name || formData.name || localStorage.getItem('name') || 'Admin'
-  const displayEmail = profile?.email || localStorage.getItem('email') || 'admin@example.com'
+  const displayName = profile?.name || formData.name || localStorage.getItem('name') || 'Mentor'
+  const displayEmail = profile?.email || localStorage.getItem('email') || 'mentor@example.com'
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
+      <MentorSidebar />
 
       <div className="flex-1 ml-64 p-8">
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex flex-col md:flex-row md:items-center gap-5">
-              <Avatar className="h-24 w-24 border-2 border-indigo-200">
+              <Avatar className="h-24 w-24 border-2 border-emerald-200">
                 <AvatarImage src={formData.avatar || '/placeholder.svg'} alt={displayName} />
                 <AvatarFallback className="text-2xl">
                   {displayName
@@ -125,9 +125,9 @@ export default function AdminProfile() {
 
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
-                <p className="text-gray-600 mt-1">{formData.title || 'Admin'}</p>
+                <p className="text-gray-600 mt-1">{formData.title || 'Mentor'}</p>
                 <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Admin</Badge>
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Mentor</Badge>
                   {formData.company && <Badge variant="outline">{formData.company}</Badge>}
                 </div>
               </div>

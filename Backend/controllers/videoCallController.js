@@ -3,11 +3,12 @@ import VideoCall from "../models/VideoCall.js";
 // Initiate a video call
 export const initiateCall = async (req, res) => {
   try {
-    const { studentId, adminId, roomId, status } = req.body;
+    const { studentId, adminId, adminModel, roomId, status } = req.body;
 
     const videoCall = new VideoCall({
       student: studentId,
       admin: adminId,
+      adminModel: adminModel || "Admin",
       roomId,
       status: status || "initiated",
     });
@@ -27,11 +28,12 @@ export const initiateCall = async (req, res) => {
 // Mark call as missed
 export const markMissedCall = async (req, res) => {
   try {
-    const { studentId, adminId, roomId } = req.body;
+    const { studentId, adminId, adminModel, roomId } = req.body;
 
     const videoCall = new VideoCall({
       student: studentId,
       admin: adminId,
+      adminModel: adminModel || "Admin",
       roomId,
       status: "missed",
     });
@@ -51,11 +53,12 @@ export const markMissedCall = async (req, res) => {
 // Update call status
 export const updateCallStatus = async (req, res) => {
   try {
-    const { studentId, adminId, roomId, status, startedAt, endedAt } = req.body;
+    const { studentId, adminId, adminModel, roomId, status, startedAt, endedAt } = req.body;
 
     const call = await VideoCall.findOne({
       student: studentId,
       admin: adminId,
+      adminModel: adminModel || "Admin",
       roomId,
     }).sort({ createdAt: -1 });
 
@@ -82,11 +85,12 @@ export const updateCallStatus = async (req, res) => {
 // Complete call
 export const completeCall = async (req, res) => {
   try {
-    const { studentId, adminId, roomId, duration, endedAt } = req.body;
+    const { studentId, adminId, adminModel, roomId, duration, endedAt } = req.body;
 
     const call = await VideoCall.findOne({
       student: studentId,
       admin: adminId,
+      adminModel: adminModel || "Admin",
       roomId,
     }).sort({ createdAt: -1 });
 
@@ -113,9 +117,10 @@ export const completeCall = async (req, res) => {
 // Get call history for admin
 export const getAdminCallHistory = async (req, res) => {
   try {
-    const adminId = req.admin._id;
+    const adminId = req.staff._id;
+    const adminModel = req.staffModel || "Admin";
 
-    const calls = await VideoCall.find({ admin: adminId })
+    const calls = await VideoCall.find({ admin: adminId, adminModel })
       .populate("student", "name email")
       .sort({ createdAt: -1 })
       .limit(100);
@@ -133,10 +138,12 @@ export const getAdminCallHistory = async (req, res) => {
 // Get missed calls for admin
 export const getMissedCalls = async (req, res) => {
   try {
-    const adminId = req.admin._id;
+    const adminId = req.staff._id;
+    const adminModel = req.staffModel || "Admin";
 
     const missedCalls = await VideoCall.find({
       admin: adminId,
+      adminModel,
       status: { $in: ["missed", "no-answer"] },
     })
       .populate("student", "name email")

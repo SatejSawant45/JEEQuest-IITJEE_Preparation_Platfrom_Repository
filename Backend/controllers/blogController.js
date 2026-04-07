@@ -1,6 +1,50 @@
 import Blog from '../models/Blog.js';
+import User from '../models/User.js';
+import Admin from '../models/Admin.js';
+import Mentor from '../models/Mentor.js';
 import { validationResult } from 'express-validator';
 import { uploadToS3, deleteFromS3 } from '../middlewares/s3Upload.js';
+
+const resolveAuthor = async (authorId) => {
+  const user = await User.findById(authorId).select('name email profilePicture');
+  if (user) {
+    return user.toObject();
+  }
+
+  const admin = await Admin.findById(authorId).select('name email avatar');
+  if (admin) {
+    const adminObj = admin.toObject();
+    return {
+      ...adminObj,
+      profilePicture: adminObj.avatar || null,
+    };
+  }
+
+  const mentor = await Mentor.findById(authorId).select('name email avatar');
+  if (mentor) {
+    const mentorObj = mentor.toObject();
+    return {
+      ...mentorObj,
+      profilePicture: mentorObj.avatar || null,
+    };
+  }
+
+  return {
+    name: 'Unknown Author',
+    email: 'unknown@unknown.com',
+    profilePicture: null,
+  };
+};
+
+const attachAuthors = async (blogs) => {
+  return Promise.all(
+    blogs.map(async (blogDoc) => {
+      const blog = blogDoc.toObject();
+      blog.author = await resolveAuthor(blogDoc.author);
+      return blog;
+    })
+  );
+};
 
 // Create a new blog post
 export const createBlog = async (req, res) => {
@@ -21,19 +65,19 @@ export const createBlog = async (req, res) => {
       title,
       content,
       type: type || 'blog',
-      author: req.user._id,
+      author: req.staff._id,
       tags: processedTags,
       images: req.body.images || [],
       video: video || null
     });
 
-    // Populate author information including profile picture
-    await blog.populate('author', 'name email profilePicture');
+    const blogObj = blog.toObject();
+    blogObj.author = await resolveAuthor(blog.author);
 
     res.status(201).json({
       success: true,
       message: 'Blog post created successfully',
-      blog
+      blog: blogObj
     });
   } catch (error) {
     console.error('Create blog error:', error);
@@ -69,17 +113,18 @@ export const getAllBlogs = async (req, res) => {
     }
 
     const blogs = await Blog.find(query)
-      .populate('author', 'name email profilePicture')
       .populate('comments.author', 'name email profilePicture')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
+    const blogsWithAuthors = await attachAuthors(blogs);
+
     const total = await Blog.countDocuments(query);
 
     res.json({
       success: true,
-      blogs,
+      blogs: blogsWithAuthors,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -101,18 +146,18 @@ export const getUserBlogs = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const blogs = await Blog.find({ author: req.user._id })
-      .populate('author', 'name email profilePicture')
+    const blogs = await Blog.find({ author: req.staff._id })
       .populate('comments.author', 'name email profilePicture')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Blog.countDocuments({ author: req.user._id });
+    const blogsWithAuthors = await attachAuthors(blogs);
+    const total = await Blog.countDocuments({ author: req.staff._id });
 
     res.json({
       success: true,
-      blogs,
+      blogs: blogsWithAuthors,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -131,7 +176,6 @@ export const getUserBlogs = async (req, res) => {
 export const getBlogById = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id)
-      .populate('author', 'name email profilePicture')
       .populate('comments.author', 'name email profilePicture');
 
     if (!blog) {
@@ -140,7 +184,10 @@ export const getBlogById = async (req, res) => {
 
     res.json({
       success: true,
-      blog
+      blog: {
+        ...blog.toObject(),
+        author: await resolveAuthor(blog.author),
+      }
     });
   } catch (error) {
     console.error('Get blog by ID error:', error);
@@ -163,7 +210,7 @@ export const updateBlog = async (req, res) => {
     }
 
     // Check if user is the author
-    if (blog.author.toString() !== req.user._id.toString()) {
+    if (blog.author.toString() !== req.staff._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this blog' });
     }
 
@@ -183,12 +230,13 @@ export const updateBlog = async (req, res) => {
     if (video !== undefined) blog.video = video;
 
     await blog.save();
-    await blog.populate('author', 'name email profilePicture');
+    const blogObj = blog.toObject();
+    blogObj.author = await resolveAuthor(blog.author);
 
     res.json({
       success: true,
       message: 'Blog updated successfully',
-      blog
+      blog: blogObj
     });
   } catch (error) {
     console.error('Update blog error:', error);
@@ -206,7 +254,7 @@ export const deleteBlog = async (req, res) => {
     }
 
     // Check if user is the author
-    if (blog.author.toString() !== req.user._id.toString()) {
+    if (blog.author.toString() !== req.staff._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to delete this blog' });
     }
 

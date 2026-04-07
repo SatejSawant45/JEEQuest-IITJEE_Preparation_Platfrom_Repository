@@ -24,10 +24,20 @@ export default function AdminsPage() {
   useEffect(() => {
     const fetchAdmins = async () => {
       try {
-        const res = await fetch(`${primaryBackendUrl}/api/admin/all`);
-        const data = await res.json();
-        setAdmins(data);
-        setFilteredAdmins(data);
+        const [adminRes, mentorRes] = await Promise.all([
+          fetch(`${primaryBackendUrl}/api/admin/all`),
+          fetch(`${primaryBackendUrl}/api/mentor/all`),
+        ]);
+
+        const adminsData = adminRes.ok ? await adminRes.json() : [];
+        const mentorsData = mentorRes.ok ? await mentorRes.json() : [];
+
+        const normalizedAdmins = adminsData.map((item) => ({ ...item, accountModel: 'Admin' }));
+        const normalizedMentors = mentorsData.map((item) => ({ ...item, accountModel: 'Mentor' }));
+        const combined = [...normalizedAdmins, ...normalizedMentors];
+
+        setAdmins(combined);
+        setFilteredAdmins(combined);
       } catch (err) {
         console.error("Failed to fetch admins", err);
       }
@@ -90,11 +100,11 @@ export default function AdminsPage() {
 
 
 
-  const handleChatConnect = (adminId) => {
-    navigate(`/chat/${adminId}`);
+  const handleChatConnect = (adminId, accountModel) => {
+    navigate(`/chat/${accountModel === 'Mentor' ? `mentor_${adminId}` : adminId}`);
   };
 
-  const handleVideoCall = (adminId) => {
+  const handleVideoCall = (adminId, accountModel) => {
     if (isCallInitiating) return;
 
     const userId = localStorage.getItem("id");
@@ -112,6 +122,7 @@ export default function AdminsPage() {
     socket.emit("initiate_call", {
       studentId: userId,
       adminId: adminId,
+      adminModel: accountModel || 'Admin',
       roomId: callRoomId,
       studentName: userName
     });
@@ -240,7 +251,7 @@ export default function AdminsPage() {
                 {/* Action Buttons */}
                 <div className="flex space-x-3 pt-4 mt-auto border-t border-gray-100">
                   <Button
-                    onClick={() => handleChatConnect(admin._id)}
+                    onClick={() => handleChatConnect(admin._id, admin.accountModel)}
                     className="flex-1 bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
                     size="sm"
                   >
@@ -248,7 +259,7 @@ export default function AdminsPage() {
                     Chat
                   </Button>
                   <Button
-                    onClick={() => handleVideoCall(admin._id)}
+                    onClick={() => handleVideoCall(admin._id, admin.accountModel)}
                     variant="outline"
                     className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
                     size="sm"

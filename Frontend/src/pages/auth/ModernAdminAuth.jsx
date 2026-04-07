@@ -345,6 +345,15 @@ export default function ModernAdminAuth() {
                 Are you a student? <span className="text-purple-600 font-medium">Login here</span>
               </Link>
             </div>
+
+            <div className="text-center">
+              <Link
+                to="/mentor/login"
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                Are you a mentor? <span className="text-purple-600 font-medium">Login here</span>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
