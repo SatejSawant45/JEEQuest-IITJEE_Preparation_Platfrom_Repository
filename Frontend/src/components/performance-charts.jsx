@@ -38,7 +38,7 @@ export function PerformanceCharts({ attempts = [] }) {
       averageScore: data.scores.length > 0 ? Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10 : 0,
       attempts: data.scores.length,
       avgTime: data.times.length > 0 ? Math.round((data.times.reduce((sum, time) => sum + time, 0) / data.times.length) * 10) / 10 : 0,
-      difficulty: data.averageScore >= 80 ? "Easy" : data.averageScore >= 60 ? "Medium" : "Hard"
+      difficulty: attempts.find((a) => String(a.quiz?._id || a.quiz) === String(quizId))?.quiz?.difficulty || "Unspecified"
     })).slice(0, 10) // Show top 10 quizzes
   }
 
@@ -50,9 +50,9 @@ export function PerformanceCharts({ attempts = [] }) {
       const quizTitle = attempt.quiz?.title || `Quiz ${index + 1}`
       
       return {
-        question: quizTitle.length > 15 ? `${quizTitle.slice(0, 15)}...` : quizTitle,
+        quiz: quizTitle.length > 15 ? `${quizTitle.slice(0, 15)}...` : quizTitle,
         avgTime: Math.round(duration * 10) / 10,
-        optimalTime: Math.round(duration * 1.2 * 10) / 10, // Estimate optimal as 20% more
+        targetTime: Math.round((attempt.quiz?.duration || duration) * 10) / 10,
         score: attempt.percentage || 0
       }
     })
@@ -101,13 +101,13 @@ export function PerformanceCharts({ attempts = [] }) {
       <Card className="col-span-2">
         <CardHeader>
           <CardTitle>Question-wise Performance Analysis</CardTitle>
-          <CardDescription>Correct answer rates for each question</CardDescription>
+          <CardDescription>Average score by quiz attempt history</CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer
             config={{
-              correctRate: {
-                label: "Correct Rate (%)",
+              averageScore: {
+                label: "Average Score (%)",
                 color: "hsl(var(--chart-1))",
               },
             }}
@@ -115,19 +115,19 @@ export function PerformanceCharts({ attempts = [] }) {
           >
             <BarChart data={questionPerformanceData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="question" />
+              <XAxis dataKey="quiz" />
               <YAxis />
               <ChartTooltip
                 content={<ChartTooltipContent />}
                 formatter={(value, name, props) => [
                   `${value}%`,
-                  "Correct Rate",
+                  "Average Score",
                   <Badge key="difficulty" variant="outline" className="ml-2">
                     {props.payload?.difficulty}
                   </Badge>,
                 ]}
               />
-              <Bar dataKey="correctRate" fill="var(--color-correctRate)" radius={4} />
+              <Bar dataKey="averageScore" fill="var(--color-averageScore)" radius={4} />
             </BarChart>
           </ChartContainer>
         </CardContent>
@@ -143,11 +143,11 @@ export function PerformanceCharts({ attempts = [] }) {
           <ChartContainer
             config={{
               avgTime: {
-                label: "Average Time (s)",
+                label: "Average Time (min)",
                 color: "hsl(var(--chart-2))",
               },
-              optimalTime: {
-                label: "Optimal Time (s)",
+              targetTime: {
+                label: "Target Time (min)",
                 color: "hsl(var(--chart-3))",
               },
             }}
@@ -155,14 +155,14 @@ export function PerformanceCharts({ attempts = [] }) {
           >
             <LineChart data={timeAnalysisData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="question" />
+              <XAxis dataKey="quiz" />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line type="monotone" dataKey="avgTime" stroke="var(--color-avgTime)" strokeWidth={2} dot={{ r: 4 }} />
               <Line
                 type="monotone"
-                dataKey="optimalTime"
-                stroke="var(--color-optimalTime)"
+                dataKey="targetTime"
+                stroke="var(--color-targetTime)"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={{ r: 4 }}

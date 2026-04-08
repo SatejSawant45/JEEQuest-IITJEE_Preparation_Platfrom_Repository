@@ -31,6 +31,7 @@ const routeLabels = {
   '/user/dashboard/admins': 'Chat with Mentor',
   '/user/dashboard/lectures': 'Video Lectures',
   '/user/dashboard/quizzes': 'Practice Quizzes',
+  '/user/dashboard/notifications': 'Notifications',
   '/user/dashboard/profile': 'My Profile',
   '/user/dashboard/profile/edit': 'Edit Profile',
 }

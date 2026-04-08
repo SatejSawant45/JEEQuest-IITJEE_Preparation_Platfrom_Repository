@@ -45,6 +45,7 @@ import MentorProfile from './pages/Mentor/Profile.jsx';
 import MentorVideoCall from './pages/Mentor/MentorVideoCallNew.jsx';
 import DashboardLayout from './pages/User/DashboardLayout.jsx';
 import HomeDashboard from './pages/User/HomeDashboard.jsx';
+import NotificationsPage from './pages/User/Notifications.jsx';
 
 function App() {
     return (
@@ -73,6 +74,7 @@ function App() {
                         <Route path="quizzes" element={<QuizPage></QuizPage>}></Route>
                         <Route path="profile" element={<Profile></Profile>}></Route>
                         <Route path="profile/edit" element={<EditProfile></EditProfile>}></Route>
+                        <Route path="notifications" element={<NotificationsPage></NotificationsPage>}></Route>
                     </Route>
 
                     <Route path="/user/takequiz/:id" element={<CurrentQuiz></CurrentQuiz>}></Route>

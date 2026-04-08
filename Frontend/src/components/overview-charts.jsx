@@ -26,7 +26,10 @@ export function OverviewCharts({ attempts = [] }) {
       }
     })
     
-    return Object.values(monthlyData).slice(-6) // Last 6 months
+    return Object.entries(monthlyData)
+      .sort(([a], [b]) => (a > b ? 1 : -1))
+      .map(([, value]) => value)
+      .slice(-6) // Last 6 months
   }
 
   const processScoreDistribution = () => {
@@ -50,26 +53,20 @@ export function OverviewCharts({ attempts = [] }) {
   }
 
   const processDifficultyPerformance = () => {
-    // For now, we'll categorize based on quiz titles or use generic categories
-    // This could be enhanced if quiz difficulty is stored in the database
     const categories = {
-      "Easy": { totalScore: 0, count: 0 },
-      "Medium": { totalScore: 0, count: 0 },
-      "Hard": { totalScore: 0, count: 0 }
+      "Beginner": { totalScore: 0, count: 0 },
+      "Intermediate": { totalScore: 0, count: 0 },
+      "Advanced": { totalScore: 0, count: 0 },
+      "Unspecified": { totalScore: 0, count: 0 }
     }
     
     attempts.filter(a => a.completedAt && a.percentage != null).forEach(attempt => {
-      // Simple categorization based on average score
-      if (attempt.percentage >= 80) {
-        categories.Easy.totalScore += attempt.percentage
-        categories.Easy.count += 1
-      } else if (attempt.percentage >= 60) {
-        categories.Medium.totalScore += attempt.percentage
-        categories.Medium.count += 1
-      } else {
-        categories.Hard.totalScore += attempt.percentage
-        categories.Hard.count += 1
+      const difficulty = attempt.quiz?.difficulty || "Unspecified"
+      if (!categories[difficulty]) {
+        categories[difficulty] = { totalScore: 0, count: 0 }
       }
+      categories[difficulty].totalScore += attempt.percentage
+      categories[difficulty].count += 1
     })
     
     return Object.entries(categories).map(([difficulty, data]) => ({
@@ -82,6 +79,7 @@ export function OverviewCharts({ attempts = [] }) {
   const attemptTrendsData = processAttemptTrends()
   const scoreDistributionData = processScoreDistribution()
   const difficultyPerformanceData = processDifficultyPerformance()
+  const totalDistributionAttempts = scoreDistributionData.reduce((sum, item) => sum + item.count, 0)
   return (
     <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
       {/* Attempt Trends */}
@@ -137,7 +135,7 @@ export function OverviewCharts({ attempts = [] }) {
           <CardDescription>Distribution of quiz scores across all attempts</CardDescription>
         </CardHeader>
         <CardContent>
-          {scoreDistributionData.length === 0 ? (
+          {totalDistributionAttempts === 0 ? (
             <div className="flex items-center justify-center h-[300px] text-muted-foreground">
               <div className="text-center">
                 <div className="text-sm">No completed quiz attempts yet</div>

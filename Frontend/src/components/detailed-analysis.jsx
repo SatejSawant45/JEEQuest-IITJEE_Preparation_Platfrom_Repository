@@ -9,40 +9,30 @@ import { Progress } from "@/components/ui/progress"
 import { AlertTriangle, CheckCircle, Clock, Users } from "lucide-react"
 
 export function DetailedAnalysis({ attempts = [] }) {
-  // Process category performance (categorize by quiz titles)
+  const completedAttempts = attempts.filter((a) => a.completedAt && a.quiz && a.percentage != null)
+
+  // Process category performance using real quiz subject
   const processCategoryPerformance = () => {
     const categories = {}
     
-    attempts.filter(a => a.completedAt && a.quiz && a.percentage != null).forEach(attempt => {
-      const quizTitle = attempt.quiz.title || 'Unknown'
-      let category = 'General'
-      
-      // Simple categorization based on quiz title keywords
-      if (quizTitle.toLowerCase().includes('math') || quizTitle.toLowerCase().includes('algebra') || quizTitle.toLowerCase().includes('calculus')) {
-        category = 'Mathematics'
-      } else if (quizTitle.toLowerCase().includes('science') || quizTitle.toLowerCase().includes('physics') || quizTitle.toLowerCase().includes('chemistry')) {
-        category = 'Science'
-      } else if (quizTitle.toLowerCase().includes('history')) {
-        category = 'History'
-      } else if (quizTitle.toLowerCase().includes('literature') || quizTitle.toLowerCase().includes('english')) {
-        category = 'Literature'
-      } else if (quizTitle.toLowerCase().includes('geography')) {
-        category = 'Geography'
-      }
+    completedAttempts.forEach(attempt => {
+      const category = attempt.quiz?.subject || 'General'
+      const difficulty = attempt.quiz?.difficulty || 'Unspecified'
       
       if (!categories[category]) {
-        categories[category] = { scores: [], count: 0 }
+        categories[category] = { scores: [], count: 0, difficultyCount: {} }
       }
       
       categories[category].scores.push(attempt.percentage)
       categories[category].count += 1
+      categories[category].difficultyCount[difficulty] = (categories[category].difficultyCount[difficulty] || 0) + 1
     })
     
     return Object.entries(categories).map(([category, data]) => ({
       category,
       averageScore: data.scores.length > 0 ? Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10 : 0,
       attempts: data.count,
-      difficulty: data.averageScore >= 80 ? "Easy" : data.averageScore >= 60 ? "Medium" : "Hard"
+      difficulty: Object.entries(data.difficultyCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unspecified'
     })).filter(item => item.attempts > 0)
   }
 
@@ -50,7 +40,7 @@ export function DetailedAnalysis({ attempts = [] }) {
   const processRetakeAnalysis = () => {
     const quizAttempts = {}
     
-    attempts.filter(a => a.completedAt && a.quiz && a.percentage != null).forEach(attempt => {
+    completedAttempts.forEach(attempt => {
       const quizId = attempt.quiz._id || attempt.quiz
       
       if (!quizAttempts[quizId]) {
@@ -92,7 +82,7 @@ export function DetailedAnalysis({ attempts = [] }) {
   const processProblemQuestions = () => {
     const quizPerformance = {}
     
-    attempts.filter(a => a.completedAt && a.quiz && a.percentage != null).forEach(attempt => {
+    completedAttempts.forEach(attempt => {
       const quizId = attempt.quiz._id || attempt.quiz
       const quizTitle = attempt.quiz.title || `Quiz ${quizId.slice(-4)}`
       
@@ -117,16 +107,63 @@ export function DetailedAnalysis({ attempts = [] }) {
         question: data.title.length > 20 ? `${data.title.slice(0, 20)}...` : data.title,
         correctRate: Math.round((data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length) * 10) / 10,
         avgTime: data.times.length > 0 ? Math.round((data.times.reduce((sum, time) => sum + time, 0) / data.times.length) * 10) / 10 : 0,
-        category: 'General'
+        category: attempts.find((a) => String(a.quiz?._id || a.quiz) === String(quizId))?.quiz?.subject || 'General'
       }))
       .filter(item => item.correctRate < 70) // Show only problem areas
       .sort((a, b) => a.correctRate - b.correctRate) // Sort by lowest score first
       .slice(0, 5) // Show top 5 problem areas
   }
 
+  const generateInsights = () => {
+    const insights = []
+    const categoryData = processCategoryPerformance()
+
+    if (categoryData.length > 0) {
+      const bestCategory = [...categoryData].sort((a, b) => b.averageScore - a.averageScore)[0]
+      insights.push({
+        type: 'strong',
+        title: 'Strong Performance',
+        description: `${bestCategory.category} is your strongest subject with an average score of ${bestCategory.averageScore}%.`,
+      })
+
+      const weakestCategory = [...categoryData].sort((a, b) => a.averageScore - b.averageScore)[0]
+      if (weakestCategory) {
+        insights.push({
+          type: 'improve',
+          title: 'Area for Improvement',
+          description: `${weakestCategory.category} needs focus. Current average is ${weakestCategory.averageScore}% across ${weakestCategory.attempts} attempts.`,
+        })
+      }
+    }
+
+    const timedAttempts = completedAttempts.filter((a) => a.startedAt && a.completedAt)
+    if (timedAttempts.length > 0) {
+      const averageDuration = timedAttempts.reduce((sum, a) => {
+        const mins = (new Date(a.completedAt) - new Date(a.startedAt)) / (1000 * 60)
+        return sum + mins
+      }, 0) / timedAttempts.length
+
+      const averageTarget = timedAttempts.reduce((sum, a) => sum + (a.quiz?.duration || 0), 0) / timedAttempts.length
+
+      const ratio = averageTarget > 0 ? (averageDuration / averageTarget) : 1
+      const timingMessage = ratio > 1
+        ? `You are using about ${Math.round((ratio - 1) * 100)}% more time than quiz duration on average.`
+        : `You are finishing about ${Math.round((1 - ratio) * 100)}% faster than the configured quiz duration.`
+
+      insights.push({
+        type: 'time',
+        title: 'Time Management',
+        description: timingMessage,
+      })
+    }
+
+    return insights.slice(0, 3)
+  }
+
   const categoryPerformanceData = processCategoryPerformance()
   const retakeAnalysisData = processRetakeAnalysis()
   const problemQuestions = processProblemQuestions()
+  const insights = generateInsights()
   return (
     <div className="space-y-6">
       {/* Category Performance */}
@@ -240,7 +277,7 @@ export function DetailedAnalysis({ attempts = [] }) {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {question.avgTime}s avg time
+                    {question.avgTime}m avg time
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
@@ -261,35 +298,21 @@ export function DetailedAnalysis({ attempts = [] }) {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="font-medium">Strong Performance</span>
+            {insights.map((insight, idx) => (
+              <div key={`${insight.title}-${idx}`} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {insight.type === 'strong' ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : insight.type === 'improve' ? (
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-blue-500" />
+                  )}
+                  <span className="font-medium">{insight.title}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{insight.description}</p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                History and Mathematics categories show consistently high scores above 80%
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">Areas for Improvement</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Science and Literature questions need content review and clearer explanations
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span className="font-medium">Time Management</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Students are taking 15% longer than optimal time on difficult questions
-              </p>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>

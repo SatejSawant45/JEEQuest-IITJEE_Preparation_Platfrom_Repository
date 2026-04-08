@@ -131,7 +131,7 @@ export const submitAttempt = async(req,res) => {
 export const getUserAttempts = async(req,res) => {
     try{
         const attempts = await Attempt.find({user : req.user._id})
-                                    .populate('quiz','title duration')
+                                    .populate('quiz','title duration difficulty subject')
                                     .sort('-createdAt');
         res.json(attempts);
     }catch(error)
