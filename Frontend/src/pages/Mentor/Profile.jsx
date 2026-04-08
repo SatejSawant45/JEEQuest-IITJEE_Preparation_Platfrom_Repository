@@ -18,6 +18,7 @@ export default function MentorProfile() {
     company: '',
     location: '',
     experience: '',
+    probableActiveTime: '',
     description: '',
     phone: '',
     website: '',
@@ -51,6 +52,7 @@ export default function MentorProfile() {
             company: data.company || '',
             location: data.location || '',
             experience: data.experience || '',
+            probableActiveTime: data.probableActiveTime || '',
             description: data.description || '',
             phone: data.phone || '',
             website: data.website || '',
@@ -175,6 +177,14 @@ export default function MentorProfile() {
                     <Input value={formData.experience} onChange={(e) => handleChange('experience', e.target.value)} />
                   </div>
                   <div>
+                    <Label>Likely Active Time</Label>
+                    <Input
+                      value={formData.probableActiveTime}
+                      onChange={(e) => handleChange('probableActiveTime', e.target.value)}
+                      placeholder="e.g. Weekdays 6 PM - 10 PM"
+                    />
+                  </div>
+                  <div>
                     <Label>Phone</Label>
                     <Input value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} />
                   </div>
@@ -230,7 +240,7 @@ export default function MentorProfile() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-gray-500" />
-                  <span>{formData.experience || 'No experience set'}</span>
+                  <span>{formData.probableActiveTime || 'No active time set'}</span>
                 </div>
               </CardContent>
             </Card>

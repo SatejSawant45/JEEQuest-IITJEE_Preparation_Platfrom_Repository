@@ -119,12 +119,6 @@ export default function Dashboard() {
                 </span>
                 <Link
                   to="/admin/profile"
-                  className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-                >
-                  Edit Profile
-                </Link>
-                <Link
-                  to="/admin/profile"
                   className="hover:opacity-90 transition-opacity"
                   title="Open profile"
                 >

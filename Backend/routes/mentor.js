@@ -27,6 +27,7 @@ router.put('/profile', mentorAuth, [
   body('company').optional().trim(),
   body('location').optional().trim(),
   body('experience').optional().trim(),
+  body('probableActiveTime').optional().trim(),
   body('description').optional().trim().isLength({ max: 1000 }).withMessage('Description cannot exceed 1000 characters'),
   body('phone').optional().trim(),
   body('website').optional().trim(),

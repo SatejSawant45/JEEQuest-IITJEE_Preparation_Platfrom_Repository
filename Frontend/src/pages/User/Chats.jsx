@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Phone, Video, MoreVertical, Send, Smile, Paperclip } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical, Send, Smile, Paperclip } from "lucide-react";
 import { SocketContext } from "@/context/socket";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -25,12 +31,15 @@ export default function ChatPage() {
   console.log(roomId);
 
 
-  const [admin, setAdmin] = useState({ name: "Loading...", avatar: "/placeholder.svg", isOnline: true });
+  const [admin, setAdmin] = useState({ name: "Loading...", avatar: "/placeholder.svg", isOnline: false });
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [isCallInitiating, setIsCallInitiating] = useState(false);
   const bottomRef = useRef(null);
+  const fileInputRef = useRef(null);
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
+  const socketUrl = import.meta.env.VITE_SOCKET_URL;
   // ✅ Join room and fetch old messages
   useEffect(() => {
     if (!roomId) return;
@@ -44,7 +53,7 @@ export default function ChatPage() {
         const data = await res.json();
         const formatted = data.map(msg => ({
           ...msg,
-          isOwn: msg.senderId === userId
+          isOwn: String(msg.senderId) === String(userId)
         }));
         setMessages(formatted);
       } catch (err) {
@@ -64,16 +73,32 @@ export default function ChatPage() {
         setAdmin({
           name: data.name,
           avatar: data.avatar || "/placeholder.svg",
-          isOnline: true // fake for now
+          isOnline: false
         });
       } catch (err) {
         console.error("Failed to fetch Admin info", err);
       }
     };
 
+    const fetchInitialStatus = async () => {
+      try {
+        if (!socketUrl) return;
+        const response = await fetch(`${socketUrl}/test`);
+        if (!response.ok) return;
+        const data = await response.json();
+
+        const onlineIds = isMentorChat ? (data.onlineMentors || []) : (data.onlineAdmins || []);
+        const isOnline = onlineIds.includes(cleanAdminId);
+        setAdmin((prev) => ({ ...prev, isOnline }));
+      } catch (err) {
+        console.warn("Failed to fetch initial staff status", err);
+      }
+    };
+
     fetchMessages();
     fetchAdmin();
-  }, [roomId]);
+    fetchInitialStatus();
+  }, [roomId, primaryBackendUrl, socketUrl, isMentorChat, cleanAdminId, userId]);
 
   // ✅ Scroll to bottom on message change
   useEffect(() => {
@@ -107,13 +132,27 @@ export default function ChatPage() {
       alert(message);
     });
 
+    socket.on("admin_status_changed", ({ adminId: changedAdminId, isOnline }) => {
+      if (!isMentorChat && changedAdminId === cleanAdminId) {
+        setAdmin((prev) => ({ ...prev, isOnline }));
+      }
+    });
+
+    socket.on("mentor_status_changed", ({ mentorId, isOnline }) => {
+      if (isMentorChat && mentorId === cleanAdminId) {
+        setAdmin((prev) => ({ ...prev, isOnline }));
+      }
+    });
+
     return () => {
       socket.off("receive_message");
       socket.off("call_accepted");
       socket.off("call_rejected");
       socket.off("call_failed");
+      socket.off("admin_status_changed");
+      socket.off("mentor_status_changed");
     };
-  }, [socket, navigate]);
+  }, [socket, navigate, isMentorChat, cleanAdminId]);
 
   // ✅ Send message
   const handleSendMessage = (e) => {
@@ -125,6 +164,8 @@ export default function ChatPage() {
       content: newMessage,
       senderId: userId,
       senderRole: "user",
+      messageType: "text",
+      imageUrl: "",
       timestamp: new Date().toISOString()
     };
 
@@ -133,6 +174,61 @@ export default function ChatPage() {
     setMessages(prev => [...prev, { ...msg, isOwn: true }]);
     socket.emit("send_message", msg);
     setNewMessage("");
+  };
+
+  const handleAttachmentClick = () => {
+    if (uploadingImage) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleImageSelect = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be smaller than 5MB.");
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const uploadRes = await fetch(`${primaryBackendUrl}/api/messages/upload-image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData.imageUrl) {
+        throw new Error(uploadData.message || "Failed to upload image");
+      }
+
+      const msg = {
+        room: roomId,
+        content: file.name,
+        senderId: userId,
+        senderRole: "user",
+        messageType: "image",
+        imageUrl: uploadData.imageUrl,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, { ...msg, isOwn: true }]);
+      socket.emit("send_message", msg);
+    } catch (error) {
+      console.error("Image send failed:", error);
+      alert(error.message || "Failed to send image");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   // ✅ Initiate video call
@@ -158,6 +254,26 @@ export default function ChatPage() {
         alert("Admin did not respond to your call");
       }
     }, 30000);
+  };
+
+  const handleClearChat = async () => {
+    const shouldClear = window.confirm("Clear this chat history? This cannot be undone.");
+    if (!shouldClear) return;
+
+    try {
+      const response = await fetch(`${primaryBackendUrl}/api/messages/${roomId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to clear chat");
+      }
+
+      setMessages([]);
+    } catch (error) {
+      console.error("Failed to clear chat:", error);
+      alert("Failed to clear chat. Please try again.");
+    }
   };
 
   return (
@@ -188,19 +304,18 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleVideoCall}
-                disabled={isCallInitiating}
-                title={isCallInitiating ? "Calling..." : "Start video call"}
-                className="text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-              >
-                <Video className={`h-5 w-5 ${isCallInitiating ? "animate-pulse text-green-600" : ""}`} />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-gray-100">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900 hover:bg-gray-100">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleClearChat} className="text-red-600 focus:text-red-600">
+                    Clear Chat
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -223,7 +338,17 @@ export default function ChatPage() {
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 items-end ${msg.isOwn ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.isOwn ? "bg-gray-900 text-white" : "bg-gray-100/80 text-gray-800 border border-gray-100"}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.imageUrl ? (
+                      <a href={msg.imageUrl} target="_blank" rel="noreferrer">
+                        <img
+                          src={msg.imageUrl}
+                          alt={msg.content || "Shared image"}
+                          className="max-h-64 w-auto rounded-lg border border-gray-200"
+                        />
+                      </a>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    )}
                     <p className={`text-[10px] mt-1 text-right ${msg.isOwn ? "text-gray-300" : "text-gray-400"}`}>
                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
@@ -236,8 +361,23 @@ export default function ChatPage() {
 
           {/* Input box */}
           <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
             <form onSubmit={handleSendMessage} className="flex gap-3 items-center">
-              <Button type="button" variant="ghost" size="icon" className="shrink-0 text-gray-500 hover:text-gray-900 hover:bg-gray-200">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleAttachmentClick}
+                disabled={uploadingImage}
+                title={uploadingImage ? "Uploading image..." : "Attach image"}
+                className="shrink-0 text-gray-500 hover:text-gray-900 hover:bg-gray-200"
+              >
                 <Paperclip className="h-5 w-5" />
               </Button>
               <div className="flex-1 relative">

@@ -1,13 +1,11 @@
 import { useEffect, useState, useContext } from "react";
-import { Search, MessageCircle, Video, Star, MapPin, Clock } from "lucide-react";
+import { Search, MessageCircle, Video, MapPin, Clock, Mail, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import VideoCall from "./VideoCall";
-import { io } from "socket.io-client";
 import IncomingCallDialog from "../IncommingVideoCall";
 import { SocketContext } from "@/context/socket";
 
@@ -16,9 +14,11 @@ export default function AdminsPage() {
   const [admins, setAdmins] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAdmins, setFilteredAdmins] = useState([]);
+  const [onlineStatusById, setOnlineStatusById] = useState({});
   const [incomingCall, setIncomingCall] = useState(null);
   const [isCallInitiating, setIsCallInitiating] = useState(false);
   const primaryBackendUrl = import.meta.env.VITE_PRIMARY_BACKEND_URL;
+  const socketUrl = import.meta.env.VITE_SOCKET_URL;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,6 +45,31 @@ export default function AdminsPage() {
 
     fetchAdmins();
   }, []);
+
+  useEffect(() => {
+    const fetchInitialOnlineStatus = async () => {
+      try {
+        if (!socketUrl) return;
+        const response = await fetch(`${socketUrl}/test`);
+        if (!response.ok) return;
+        const data = await response.json();
+
+        const statusMap = {};
+        (data.onlineAdmins || []).forEach((id) => {
+          statusMap[id] = true;
+        });
+        (data.onlineMentors || []).forEach((id) => {
+          statusMap[id] = true;
+        });
+
+        setOnlineStatusById((prev) => ({ ...prev, ...statusMap }));
+      } catch (error) {
+        console.warn("Failed to fetch initial online status", error);
+      }
+    };
+
+    fetchInitialOnlineStatus();
+  }, [socketUrl]);
 
 
   useEffect(() => {
@@ -78,11 +103,21 @@ export default function AdminsPage() {
       alert(message);
     });
 
+    socket.on("admin_status_changed", ({ adminId, isOnline }) => {
+      setOnlineStatusById((prev) => ({ ...prev, [adminId]: isOnline }));
+    });
+
+    socket.on("mentor_status_changed", ({ mentorId, isOnline }) => {
+      setOnlineStatusById((prev) => ({ ...prev, [mentorId]: isOnline }));
+    });
+
     return () => {
       socket.off("incoming_call");
       socket.off("call_accepted");
       socket.off("call_rejected");
       socket.off("call_failed");
+      socket.off("admin_status_changed");
+      socket.off("mentor_status_changed");
     };
   }, [socket, navigate]);
 
@@ -136,6 +171,40 @@ export default function AdminsPage() {
     }, 30000);
   };
 
+  const getUserStatus = (staff) => {
+    const isOnline = !!onlineStatusById[staff._id];
+    return {
+      isOnline,
+      label: isOnline ? "Online now" : "Offline",
+      dotClass: isOnline ? "bg-green-500" : "bg-gray-400",
+    };
+  };
+
+  const getLikelyActiveTime = (staff) => {
+    if (onlineStatusById[staff._id]) return "Active now";
+
+    if (typeof staff.probableActiveTime === "string" && staff.probableActiveTime.trim()) {
+      return staff.probableActiveTime;
+    }
+
+    if (typeof staff.availability === "string" && staff.availability.trim()) {
+      return staff.availability;
+    }
+
+    if (typeof staff.preferredActiveTime === "string" && staff.preferredActiveTime.trim()) {
+      return staff.preferredActiveTime;
+    }
+
+    if (typeof staff.activeHours === "string" && staff.activeHours.trim()) {
+      return staff.activeHours;
+    }
+
+    const hour = new Date().getHours();
+    if (hour < 12) return "Likely active: 6:00 PM - 10:00 PM";
+    if (hour < 18) return "Likely active: 7:00 PM - 11:00 PM";
+    return "Likely active: 10:00 AM - 1:00 PM";
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -186,24 +255,18 @@ export default function AdminsPage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg text-gray-900 truncate">{admin.name}</h3>
                     <p className="text-sm text-gray-600 truncate mb-1">{admin.title}</p>
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-none px-2 py-0 text-xs font-medium">
-                      {admin.company}
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-none px-2 py-0 text-xs font-medium mr-2">
+                      {admin.company || "Independent"}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs border-gray-200">
+                      {admin.accountModel}
                     </Badge>
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-4 pt-5 pb-5 flex-1 flex flex-col">
-                {/* Rating and Reviews */}
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="ml-1 text-sm font-medium">{admin.rating || 0}</span>
-                  </div>
-                  <span className="text-sm text-gray-500">({admin.reviews || 0} reviews)</span>
-                </div>
-
-                {/* Location and Experience */}
+                {/* Location and Likely Active Time */}
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <div className="flex items-center">
                     <MapPin className="h-4 w-4 mr-1" />
@@ -211,13 +274,25 @@ export default function AdminsPage() {
                   </div>
                   <div className="flex items-center">
                     <Clock className="h-4 w-4 mr-1" />
-                    <span>{admin.experience || "N/A"}</span>
+                    <span>{getLikelyActiveTime(admin)}</span>
                   </div>
                 </div>
 
                 {/* Hourly Rate */}
                 <div className="text-lg font-semibold text-green-600">
                   ${admin.hourlyRate || "—"}/hour
+                </div>
+
+                {/* Contact and profile links */}
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 truncate">
+                    <Mail className="h-4 w-4" />
+                    <span className="truncate">{admin.email || "No email available"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 truncate">
+                    <Globe className="h-4 w-4" />
+                    <span className="truncate">{admin.website || admin.linkedin || admin.github || "No website/profile"}</span>
+                  </div>
                 </div>
 
                 {/* Skills */}
@@ -235,17 +310,19 @@ export default function AdminsPage() {
                 </div>
 
                 {/* Bio */}
-                <p className="text-sm text-gray-600 line-clamp-2">{admin.bio}</p>
+                <p className="text-sm text-gray-600 line-clamp-2">{admin.description || "No description provided yet."}</p>
 
-                {/* Availability */}
+                {/* Current Status */}
                 <div className="flex items-center">
-                  <div
-                    className={`h-2 w-2 rounded-full mr-2 ${admin.availability === "Available now" ? "bg-green-400" : "bg-yellow-400"
-                      }`}
-                  />
-                  <span className="text-sm text-gray-600">
-                    {admin.availability || "Check back later"}
-                  </span>
+                  {(() => {
+                    const status = getUserStatus(admin);
+                    return (
+                      <>
+                        <div className={`h-2 w-2 rounded-full mr-2 ${status.dotClass}`} />
+                        <span className="text-sm text-gray-600">{status.label}</span>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Action Buttons */}

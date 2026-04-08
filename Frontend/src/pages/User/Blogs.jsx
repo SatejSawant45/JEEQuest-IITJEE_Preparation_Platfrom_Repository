@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react"
 
-export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaffLayout = false } = {}) {
+export default function BloggingPlatform({ forceOwnOnly = false } = {}) {
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
   const [showComments, setShowComments] = useState(null)
   const [newComment, setNewComment] = useState("")
@@ -38,6 +38,7 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("All Subjects")
   const [selectedBlog, setSelectedBlog] = useState(null)
+  const [blogActionState, setBlogActionState] = useState({ type: null, blogId: null })
   
   // Blog data states
   const [allBlogs, setAllBlogs] = useState([])
@@ -394,6 +395,7 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
 
   const handleLike = async (blogId) => {
     try {
+      setBlogActionState({ type: "like", blogId })
       const token = localStorage.getItem("jwtToken")
       if (!token) {
         alert('Please login to like posts')
@@ -414,6 +416,8 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
       }
     } catch (err) {
       console.error('Error liking blog:', err)
+    } finally {
+      setBlogActionState({ type: null, blogId: null })
     }
   }
 
@@ -421,6 +425,7 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
     if (!newComment.trim()) return
 
     try {
+      setBlogActionState({ type: "comment", blogId: postId })
       const token = localStorage.getItem("jwtToken")
       if (!token) {
         alert('Please login to comment')
@@ -444,6 +449,8 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
       }
     } catch (err) {
       console.error('Error adding comment:', err)
+    } finally {
+      setBlogActionState({ type: null, blogId: null })
     }
   }
 
@@ -508,179 +515,348 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className={`${embeddedInStaffLayout ? 'relative' : 'sticky top-0'} z-50 bg-white border-b border-gray-200`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">BlogSpace</h1>
-              <div className="hidden md:block">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search posts, topics, or users..."
-                    className="pl-10 w-80"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {selectedBlog ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={() => setSelectedBlog(null)}>
+                Back to Blogs
+              </Button>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold leading-tight text-gray-900">{selectedBlog.title}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                  <span>{selectedBlog.author?.name}</span>
+                  <span>•</span>
+                  <span>{formatTimestamp(selectedBlog.createdAt)}</span>
+                  <Badge variant={selectedBlog.type === "blog" ? "default" : "secondary"} className="ml-1 text-xs">
+                    {selectedBlog.type === "blog" ? "Blog" : "Question"}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">{inferSubject(selectedBlog)}</Badge>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {canCreateBlogs && (
-                <Dialog open={isCreatePostOpen} onOpenChange={setIsCreatePostOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-black hover:bg-gray-900 text-white">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Blog
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Create New Post</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="post-type">Post Type</Label>
-                      <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select post type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="blog">Blog Post</SelectItem>
-                          <SelectItem value="question">Question/Doubt</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="title">Title</Label>
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => handleInputChange('title', e.target.value)}
-                        placeholder={formData.type === "blog" ? "Enter your blog post title..." : "What's your question?"}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="subject">Subject</Label>
-                      <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
-                        <SelectTrigger id="subject">
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subjectOptions.filter((item) => item !== 'All Subjects').map((subject) => (
-                            <SelectItem key={subject} value={subject}>
-                              {subject}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="content">Content</Label>
-                      <Textarea
-                        id="content"
-                        value={formData.content}
-                        onChange={(e) => handleInputChange('content', e.target.value)}
-                        placeholder={
-                          formData.type === "blog"
-                            ? "Write your blog post content..."
-                            : "Describe your question in detail..."
-                        }
-                        className="min-h-[200px]"
-                      />
-                    </div>
-                    <div>
-                      <Label>Images (optional, max 5)</Label>
-                      <div className="space-y-4">
-                        {/* File Upload */}
-                        <div className="flex gap-2">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={selectedFiles.length === 0 || uploading}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {selectedFiles.length} selected
-                          </Button>
-                        </div>
 
-                        {/* Image Previews */}
-                        {previewUrls.length > 0 && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {previewUrls.map((url, index) => (
-                              <div key={index} className="relative">
-                                <img
-                                  src={url}
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-20 object-cover rounded border"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  className="absolute top-1 right-1 h-6 w-6 p-0"
-                                  onClick={() => removeImage(index)}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+              {selectedBlog.images && selectedBlog.images.length > 0 && (
+                <div className="space-y-2">
+                  {selectedBlog.images.length === 1 ? (
+                    <div className="rounded-lg overflow-hidden">
+                      <img src={getImageUrl(selectedBlog.images[0])} alt="Post image" className="w-full max-h-[500px] object-cover" />
                     </div>
-                    <div>
-                      <Label htmlFor="video">Video URL (optional)</Label>
-                      <Input
-                        id="video"
-                        value={formData.video}
-                        onChange={(e) => handleInputChange('video', e.target.value)}
-                        placeholder="https://example.com/video.mp4"
-                      />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {selectedBlog.images.map((image, index) => (
+                        <div key={index} className="rounded-lg overflow-hidden">
+                          <img src={getImageUrl(image)} alt={`Post image ${index + 1}`} className="w-full h-56 object-cover" />
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <Label htmlFor="tags">Tags</Label>
-                      <Input 
-                        id="tags" 
-                        value={formData.tags}
-                        onChange={(e) => handleInputChange('tags', e.target.value)}
-                        placeholder="Add tags separated by commas..." 
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setIsCreatePostOpen(false)} disabled={creating}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleCreatePost} className="bg-blue-600 hover:bg-blue-700" disabled={creating}>
-                        {creating ? (
-                          <>
-                            <div className="animate-spin w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-                            Publishing...
-                          </>
-                        ) : (
-                          'Publish Post'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  </DialogContent>
-                </Dialog>
+                  )}
+                </div>
               )}
 
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedBlog.content}</p>
+
+              {selectedBlog.video && (
+                <div className="rounded-lg overflow-hidden bg-gray-100 h-48 flex items-center justify-center">
+                  <div className="text-center">
+                    <Video className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                    <a href={selectedBlog.video} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                      Watch Video
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                {selectedBlog.tags?.map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-xs">#{tag}</Badge>
+                ))}
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-500 hover:text-red-500"
+                    disabled={blogActionState.type === "like" && blogActionState.blogId === selectedBlog._id}
+                    onClick={async () => {
+                      await handleLike(selectedBlog._id)
+                      await loadAllBlogs()
+                      await loadMyBlogs()
+                      const updatedBlog = (activeTab === 'all' ? allBlogs : myBlogs).find((blog) => blog._id === selectedBlog._id)
+                      if (updatedBlog) setSelectedBlog(updatedBlog)
+                    }}
+                  >
+                    {blogActionState.type === "like" && blogActionState.blogId === selectedBlog._id ? (
+                      <>
+                        <span className="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+                        Processing like...
+                      </>
+                    ) : (
+                      <>
+                        <Heart className="w-4 h-4 mr-1" />
+                        {selectedBlog.likes || 0}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-500 hover:text-blue-500"
+                    onClick={() => toggleComments(selectedBlog._id)}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    {selectedBlog.comments ? selectedBlog.comments.length : 0}
+                  </Button>
+                </div>
+              </div>
+
+              {blogActionState.blogId === selectedBlog._id && blogActionState.type && (
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                  {blogActionState.type === "like"
+                    ? "Your like is being processed. The count will update shortly."
+                    : "Your comment is being posted. Please wait a moment."}
+                </div>
+              )}
+
+              {showComments === selectedBlog._id && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex space-x-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={getProfilePictureUrl(currentUser?.profilePicture)} />
+                      <AvatarFallback>
+                        {currentUser?.name ? currentUser.name[0].toUpperCase() : <User className="w-4 h-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-2">
+                      <Textarea
+                        placeholder="Write a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="min-h-[80px]"
+                        disabled={blogActionState.type === "comment" && blogActionState.blogId === selectedBlog._id}
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          disabled={blogActionState.type === "comment" && blogActionState.blogId === selectedBlog._id}
+                          onClick={async () => {
+                            await handleAddComment(selectedBlog._id)
+                            await loadAllBlogs()
+                            await loadMyBlogs()
+                            const updatedBlog = (activeTab === 'all' ? allBlogs : myBlogs).find((blog) => blog._id === selectedBlog._id)
+                            if (updatedBlog) setSelectedBlog(updatedBlog)
+                          }}
+                          className="bg-black hover:bg-gray-900"
+                        >
+                          {blogActionState.type === "comment" && blogActionState.blogId === selectedBlog._id ? (
+                            <>
+                              <span className="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                              Posting...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-1" />
+                              Comment
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedBlog.comments && selectedBlog.comments.map((comment) => (
+                      <div key={comment._id} className="flex space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={getProfilePictureUrl(comment.author.profilePicture)} />
+                          <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-semibold text-sm">{comment.author.name}</span>
+                              <span className="text-gray-500 text-xs">@{comment.author.email.split('@')[0]}</span>
+                              <span className="text-gray-500 text-xs">•</span>
+                              <span className="text-gray-500 text-xs">{formatTimestamp(comment.createdAt)}</span>
+                            </div>
+                            <p className="text-gray-700 text-sm">{comment.content}</p>
+                          </div>
+                          <div className="flex items-center space-x-4 mt-2">
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500 h-6 px-2">
+                              <ThumbsUp className="w-3 h-3 mr-1" />
+                              {comment.likes || 0}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-500 h-6 px-2">
+                              <ThumbsDown className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </header>
+        ) : (
+        <>
+        {canCreateBlogs && (
+          <div className="flex justify-end mb-4">
+            <Dialog open={isCreatePostOpen} onOpenChange={setIsCreatePostOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-black hover:bg-gray-900 text-white">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Blog
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Post</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="post-type">Post Type</Label>
+                  <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select post type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="blog">Blog Post</SelectItem>
+                      <SelectItem value="question">Question/Doubt</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder={formData.type === "blog" ? "Enter your blog post title..." : "What's your question?"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="subject">Subject</Label>
+                  <Select value={formData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
+                    <SelectTrigger id="subject">
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjectOptions.filter((item) => item !== 'All Subjects').map((subject) => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="content">Content</Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => handleInputChange('content', e.target.value)}
+                    placeholder={
+                      formData.type === "blog"
+                        ? "Write your blog post content..."
+                        : "Describe your question in detail..."
+                    }
+                    className="min-h-[200px]"
+                  />
+                </div>
+                <div>
+                  <Label>Images (optional, max 5)</Label>
+                  <div className="space-y-4">
+                    {/* File Upload */}
+                    <div className="flex gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelect}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedFiles.length === 0 || uploading}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {selectedFiles.length} selected
+                      </Button>
+                    </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Image Previews */}
+                    {previewUrls.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {previewUrls.map((url, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={url}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-20 object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-1 right-1 h-6 w-6 p-0"
+                              onClick={() => removeImage(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="video">Video URL (optional)</Label>
+                  <Input
+                    id="video"
+                    value={formData.video}
+                    onChange={(e) => handleInputChange('video', e.target.value)}
+                    placeholder="https://example.com/video.mp4"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="tags">Tags</Label>
+                  <Input 
+                    id="tags" 
+                    value={formData.tags}
+                    onChange={(e) => handleInputChange('tags', e.target.value)}
+                    placeholder="Add tags separated by commas..." 
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsCreatePostOpen(false)} disabled={creating}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreatePost} className="bg-blue-600 hover:bg-blue-700" disabled={creating}>
+                    {creating ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                        Publishing...
+                      </>
+                    ) : (
+                      'Publish Post'
+                    )}
+                  </Button>
+                </div>
+              </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+
         {!forceOwnOnly && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className={`grid w-full ${canCreateBlogs ? 'grid-cols-2' : 'grid-cols-1'}`}>
@@ -789,163 +965,8 @@ export default function BloggingPlatform({ forceOwnOnly = false, embeddedInStaff
             ))}
           </div>
         )}
-
-        <Dialog open={!!selectedBlog} onOpenChange={(open) => !open && setSelectedBlog(null)}>
-          <DialogContent className="max-w-5xl max-h-[88vh] overflow-y-auto">
-            {selectedBlog && (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="text-2xl leading-tight">{selectedBlog.title}</DialogTitle>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <span>{selectedBlog.author?.name}</span>
-                    <span>•</span>
-                    <span>{formatTimestamp(selectedBlog.createdAt)}</span>
-                    <Badge variant={selectedBlog.type === "blog" ? "default" : "secondary"} className="ml-2 text-xs">
-                      {selectedBlog.type === "blog" ? "Blog" : "Question"}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">{inferSubject(selectedBlog)}</Badge>
-                  </div>
-                </DialogHeader>
-
-                {selectedBlog.images && selectedBlog.images.length > 0 && (
-                  <div className="space-y-2">
-                    {selectedBlog.images.length === 1 ? (
-                      <div className="rounded-lg overflow-hidden">
-                        <img src={getImageUrl(selectedBlog.images[0])} alt="Post image" className="w-full h-72 object-cover" />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedBlog.images.map((image, index) => (
-                          <div key={index} className="rounded-lg overflow-hidden">
-                            <img src={getImageUrl(image)} alt={`Post image ${index + 1}`} className="w-full h-36 object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedBlog.content}</p>
-
-                {selectedBlog.video && (
-                  <div className="rounded-lg overflow-hidden bg-gray-100 h-48 flex items-center justify-center">
-                    <div className="text-center">
-                      <Video className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <a href={selectedBlog.video} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                        Watch Video
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {selectedBlog.tags?.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">#{tag}</Badge>
-                  ))}
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-6">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-500 hover:text-red-500"
-                      onClick={async () => {
-                        await handleLike(selectedBlog._id)
-                        await loadAllBlogs()
-                        await loadMyBlogs()
-                        const updatedBlog = (activeTab === 'all' ? allBlogs : myBlogs).find((blog) => blog._id === selectedBlog._id)
-                        if (updatedBlog) setSelectedBlog(updatedBlog)
-                      }}
-                    >
-                      <Heart className="w-4 h-4 mr-1" />
-                      {selectedBlog.likes || 0}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-500 hover:text-blue-500"
-                      onClick={() => toggleComments(selectedBlog._id)}
-                    >
-                      <MessageCircle className="w-4 h-4 mr-1" />
-                      {selectedBlog.comments ? selectedBlog.comments.length : 0}
-                    </Button>
-                  </div>
-                </div>
-
-                {showComments === selectedBlog._id && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <div className="flex space-x-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={getProfilePictureUrl(currentUser?.profilePicture)} />
-                        <AvatarFallback>
-                          {currentUser?.name ? currentUser.name[0].toUpperCase() : <User className="w-4 h-4" />}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-2">
-                        <Textarea
-                          placeholder="Write a comment..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="min-h-[80px]"
-                        />
-                        <div className="flex justify-end">
-                          <Button
-                            size="sm"
-                            onClick={async () => {
-                              await handleAddComment(selectedBlog._id)
-                              await loadAllBlogs()
-                              await loadMyBlogs()
-                              const updatedBlog = (activeTab === 'all' ? allBlogs : myBlogs).find((blog) => blog._id === selectedBlog._id)
-                              if (updatedBlog) setSelectedBlog(updatedBlog)
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <Send className="w-4 h-4 mr-1" />
-                            Comment
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {selectedBlog.comments && selectedBlog.comments.map((comment) => (
-                        <div key={comment._id} className="flex space-x-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={getProfilePictureUrl(comment.author.profilePicture)} />
-                            <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="font-semibold text-sm">{comment.author.name}</span>
-                                <span className="text-gray-500 text-xs">@{comment.author.email.split('@')[0]}</span>
-                                <span className="text-gray-500 text-xs">•</span>
-                                <span className="text-gray-500 text-xs">{formatTimestamp(comment.createdAt)}</span>
-                              </div>
-                              <p className="text-gray-700 text-sm">{comment.content}</p>
-                            </div>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500 h-6 px-2">
-                                <ThumbsUp className="w-3 h-3 mr-1" />
-                                {comment.likes || 0}
-                              </Button>
-                              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-500 h-6 px-2">
-                                <ThumbsDown className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+        </>
+        )}
       </main>
     </div>
   )

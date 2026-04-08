@@ -233,7 +233,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on("send_message", async (data) => {
-    const { room, content, senderId, senderRole, timestamp } = data;
+    const {
+      room,
+      content,
+      senderId,
+      senderRole,
+      timestamp,
+      messageType = "text",
+      imageUrl = "",
+    } = data;
     console.log("Message received:", data);
 
     socket.to(room).emit("receive_message", {
@@ -241,14 +249,24 @@ io.on('connection', (socket) => {
       content,
       senderId,
       senderRole,
-      timestamp
+      timestamp,
+      messageType,
+      imageUrl,
     });
 
     try {
       const response = await fetch(`${process.env.MAIN_SERVER_URI}/api/messages/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room, content, senderId, senderRole, timestamp })
+        body: JSON.stringify({
+          room,
+          content,
+          senderId,
+          senderRole,
+          timestamp,
+          messageType,
+          imageUrl,
+        })
       });
 
       if (!response.ok) {

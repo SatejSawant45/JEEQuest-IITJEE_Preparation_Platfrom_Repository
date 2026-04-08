@@ -20,6 +20,11 @@ const mentorSchema = new mongoose.Schema(
     },
     location: String,
     experience: String,
+    probableActiveTime: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     description: {
       type: String,
       trim: true,

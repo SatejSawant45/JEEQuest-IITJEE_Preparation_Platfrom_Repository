@@ -20,6 +20,11 @@ const adminSchema = new mongoose.Schema(
     },
     location: String,
     experience: String, // e.g. "5 years"
+    probableActiveTime: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     description: {
       type: String,
       trim: true,

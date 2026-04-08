@@ -2,6 +2,7 @@ import { validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 import bcrypt from 'bcryptjs';
+import { uploadToS3, deleteFromS3 } from '../middlewares/s3Upload.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, "satejsawantsecret", { expiresIn: '7d' });
@@ -105,6 +106,7 @@ export const updateProfile = async (req, res) => {
       'company',
       'location',
       'experience',
+      'probableActiveTime',
       'description',
       'phone',
       'website',
@@ -133,5 +135,53 @@ export const updateProfile = async (req, res) => {
   } catch (error) {
     console.error('Update admin profile error:', error);
     res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+export const uploadProfileAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const adminId = req.admin._id;
+    const admin = await Admin.findById(adminId);
+
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    if (admin.avatar) {
+      try {
+        const s3UrlPattern = /amazonaws\.com\/(.+)$/;
+        const match = admin.avatar.match(s3UrlPattern);
+        if (match && match[1]) {
+          await deleteFromS3(match[1]);
+        }
+      } catch (deleteError) {
+        console.error('Error deleting old admin avatar from S3:', deleteError);
+      }
+    }
+
+    const { url } = await uploadToS3(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      'admin-avatars'
+    );
+
+    admin.avatar = url;
+    await admin.save();
+
+    const safeAdmin = await Admin.findById(adminId).select('-password');
+
+    res.status(200).json({
+      message: 'Admin avatar uploaded successfully',
+      avatar: url,
+      admin: safeAdmin,
+    });
+  } catch (error) {
+    console.error('Upload admin avatar error:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };

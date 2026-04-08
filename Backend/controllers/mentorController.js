@@ -105,6 +105,7 @@ export const updateProfile = async (req, res) => {
       'company',
       'location',
       'experience',
+      'probableActiveTime',
       'description',
       'phone',
       'website',

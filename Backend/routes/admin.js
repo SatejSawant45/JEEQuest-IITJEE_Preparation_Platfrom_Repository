@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import Admin from '../models/Admin.js';
 import Message from '../models/Message.js';
 import { adminAuth } from '../middlewares/auth.js';
+import upload from '../middlewares/upload.js';
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.put('/profile', adminAuth, [
   body('company').optional().trim(),
   body('location').optional().trim(),
   body('experience').optional().trim(),
+  body('probableActiveTime').optional().trim(),
   body('description').optional().trim().isLength({ max: 1000 }).withMessage('Description cannot exceed 1000 characters'),
   body('phone').optional().trim(),
   body('website').optional().trim(),
@@ -34,6 +36,8 @@ router.put('/profile', adminAuth, [
   body('github').optional().trim(),
   body('avatar').optional().trim(),
 ], adminController.updateProfile);
+
+router.post('/profile/upload-avatar', adminAuth, upload.single('avatar'), adminController.uploadProfileAvatar);
 
 router.get('/all', adminController.getAll);
 
