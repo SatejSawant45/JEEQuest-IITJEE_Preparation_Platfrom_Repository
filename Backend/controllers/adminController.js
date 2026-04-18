@@ -14,7 +14,13 @@ export const register = async (req, res) => {
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
 
-    const { name, email, password, title, company } = req.body;
+    const { name, email, password, title, company, secretKey } = req.body;
+
+    // Check if the provided secret key matches the environment variable
+    const adminSecret = process.env.ADMIN_SECRET_KEY || "my_super_secret_admin_key";
+    if (secretKey !== adminSecret) {
+      return res.status(403).json({ message: "Invalid Admin Secret Key. You are not authorized to create an admin account." });
+    }
 
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin)
