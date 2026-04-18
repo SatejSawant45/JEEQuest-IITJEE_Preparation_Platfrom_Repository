@@ -102,9 +102,16 @@ export default function ChatPage() {
               try {
                 const jsonStr = line.slice(2)
                 const data = JSON.parse(jsonStr)
-                // Backend now sends full text, not deltas
-                if (data.type === "text-full" && data.text) {
-                  // Replace the entire content with the full accumulated text from backend
+                if (data.type === "text-delta" && data.textDelta) {
+                  setMessages((prev) => {
+                    const updated = [...prev]
+                    const lastMessage = updated[updated.length - 1]
+                    if (lastMessage && lastMessage.role === "assistant") {
+                      lastMessage.content += data.textDelta
+                    }
+                    return updated
+                  })
+                } else if (data.type === "text-full" && data.text) {
                   setMessages((prev) => {
                     const updated = [...prev]
                     const lastMessage = updated[updated.length - 1]
@@ -128,7 +135,16 @@ export default function ChatPage() {
         try {
           const jsonStr = buffer.slice(2)
           const data = JSON.parse(jsonStr)
-          if (data.type === "text-full" && data.text) {
+          if (data.type === "text-delta" && data.textDelta) {
+            setMessages((prev) => {
+              const updated = [...prev]
+              const lastMessage = updated[updated.length - 1]
+              if (lastMessage && lastMessage.role === "assistant") {
+                lastMessage.content += data.textDelta
+              }
+              return updated
+            })
+          } else if (data.type === "text-full" && data.text) {
             setMessages((prev) => {
               const updated = [...prev]
               const lastMessage = updated[updated.length - 1]
