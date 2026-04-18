@@ -50,7 +50,7 @@ VITE_MESSAGING_SERVER_URL=http://localhost:5001
 PORT=5001
 ```
 
-## 💻 Local Development Setup
+## Local Development Setup
 
 1. **Clone the repository:**
    ```bash
@@ -71,7 +71,6 @@ PORT=5001
    - **Frontend**: `cd Frontend && npm run dev`
    - **Messaging Server**: `cd MessagingServer && npm start` (or `npm run dev`)
 
-## 🔐 Security
+## Security
 
 - **Admin Registration**: Creating an admin account requires knowing the `ADMIN_SECRET_KEY` configured in the Backend.
-- **Credentials**: Ensure `.env` files are added to `.gitignore` and never committed to version control.
