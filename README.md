@@ -1,4 +1,4 @@
-# Quiz Website Platform (JeeQuest)
+# JeeQuest (IITJEE Preparation Platform)
 
 A quiz and learning platform designed to connect students with mentors and offer interactive quizzes The repository is divided into three main microservices: a React frontend, an Express backend, and a real-time messaging server.
 
